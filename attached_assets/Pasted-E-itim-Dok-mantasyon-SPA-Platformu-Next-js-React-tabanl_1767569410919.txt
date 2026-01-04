@@ -1,0 +1,232 @@
+Eğitim & Dokümantasyon SPA Platformu
+
+Next.js + React tabanlı, tek sayfa uygulama (SPA) olarak çalışacak, modern ve kurumsal bir eğitim & dokümantasyon platformu tasarla ve mimarisini oluştur.
+
+Bu platform, kendi yazılımımızı kullanan müşteriler için hazırlanacaktır.
+
+❌ KALDIRILACAK / OLMAYACAK ŞEYLER
+
+❌ Login / authentication YOK
+
+❌ Admin panel YOK
+
+❌ Sağ üst köşede profil simgesi YOK
+
+❌ “Need help” bölümü YOK
+
+❌ “Explore categories” bölümü YOK
+
+✅ GENEL YAPI
+
+Public erişimli
+
+SPA mantığında (hızlı, akıcı geçişler)
+
+Desktop + mobile uyumlu
+
+Kurumsal, sade, uzun ömürlü tasarım
+
+📚 EĞİTİM SİSTEMİ
+Eğitim Kategorileri
+
+Müşteri Paneli
+
+Mobil Uygulama
+
+Genel Kullanım
+
+Teknik / Geliştirici (opsiyonel)
+
+Eğitim İçeriği
+
+Udemy benzeri yapı:
+
+Kategori → Kurs → Video listesi
+
+Videolar:
+
+YouTube üzerinde barındırılacak
+
+Sayfa içinde YouTube embed player ile oynatılacak
+
+Her video için:
+
+Video eklenme tarihi
+
+Video süresi
+
+İzlenme durumu
+
+Kaldığı yerden devam etme
+
+Kurs bazında:
+
+Toplam video sayısı
+
+İzlenen video sayısı
+
+Kurs tamamlama yüzdesi (%)
+
+Görsel ilerleme barı
+
+Kullanıcı bilgisi tutulmadığı için ilerleme:
+
+LocalStorage / IndexedDB
+
+Browser bazlı
+
+📂 DOKÜMAN & DOSYA SİSTEMİ (Nextcloud)
+
+Dosyalar Nextcloud üzerinde
+
+Paylaşıma açılmış linkler kullanılacak
+
+Her kurs için:
+
+Ayrı Nextcloud paylaşım linki
+
+Sistem:
+
+Bu linklerden dosya listesini API / WebDAV ile çeker
+
+Dosyalar sayfa içinde listelenir
+
+Dosya türüne göre ikonlar
+
+PDF için önizleme
+
+Diğer dosyalar için indirme
+
+🌍 ÇOKLU DİL DESTEĞİ
+
+JSON tabanlı i18n
+
+TR / EN (genişletilebilir)
+
+Tüm UI metinleri JSON’dan gelir
+
+Dil seçimi:
+
+Sağ üst köşede dil seçici
+
+Bayrak veya kısaltma (TR / EN)
+
+Seçilen dil:
+
+LocalStorage’da saklanır
+
+Sayfa yenilense bile korunur
+
+🤖 YAPAY ZEKA DESTEKLİ ARAMA
+AI Arama Kapsamı
+
+Video başlıkları
+
+Video açıklamaları
+
+Video transkriptleri
+
+Kurs açıklamaları
+
+Kullanım
+
+Kullanıcı doğal dilde arama yapabilir:
+
+“Mobilde bildirim ayarları”
+
+“Rapor nasıl alınır”
+
+Sonuçlar:
+
+İlgili kurs
+
+İlgili video
+
+Gerekirse dakika:saniye bilgisi
+
+Teknik Yaklaşım
+
+YouTube transcript verileri
+
+Embedding + semantic search
+
+Backend servis olarak tasarlanmalı
+
+Performans ve cache düşünülmeli
+
+🧠 TEKNOLOJİ STACK
+Frontend
+
+Next.js (App Router)
+
+React
+
+TypeScript
+
+Tailwind veya modern UI framework
+
+Backend
+
+Node.js (API routes veya microservice)
+
+Database
+
+MariaDB
+
+Kurs, video, kategori, doküman metadata
+
+Dil dosyaları yönetimi
+
+Infrastructure
+
+Docker
+
+Docker Compose
+
+Nextcloud ayrı container
+
+🎨 UI / UX TASARIM
+
+Udemy + GitBook + Notion hissi
+
+Sol menü:
+
+Eğitim kategorileri
+
+Kurslar
+
+Üst bar:
+
+Global AI arama
+
+Dil seçici (sağ üst)
+
+Video izleme sayfası:
+
+Sol / sağ panel:
+
+Video listesi
+
+Kurs ilerleme yüzdesi
+
+İlgili dokümanlar
+
+Dark / Light mode
+
+📦 BEKLENEN ÇIKTI
+
+Sistem mimarisi
+
+Sayfa & route yapısı
+
+DB şeması (örnek tablolar)
+
+Nextcloud entegrasyon akışı
+
+AI arama mimarisi
+
+Docker yapısı
+
+Uzun vadeli ölçeklenebilirlik önerileri
+
+Kurumsal, sade, geliştirilebilir ve uzun ömürlü bir sistem hedeflenmelidir.
