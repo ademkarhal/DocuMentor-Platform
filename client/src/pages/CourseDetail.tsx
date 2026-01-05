@@ -2,7 +2,7 @@ import { useCourse, useCourseVideos, useCourseDocuments } from "@/hooks/use-api"
 import { useTranslation, useStore } from "@/hooks/use-store";
 import { useRoute, useLocation } from "wouter";
 import { useState, useEffect } from "react";
-import ReactPlayer from "react-player";
+// import ReactPlayer from "react-player";
 import { CheckCircle2, Circle, FileText, Download, Play, Clock } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
@@ -49,7 +49,6 @@ export default function CourseDetail() {
   const handleVideoComplete = () => {
     if (course && activeVideoId) {
       markVideoComplete(course.id, activeVideoId);
-      // Auto-advance logic could go here
     }
   };
 
@@ -58,16 +57,18 @@ export default function CourseDetail() {
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col min-h-0 overflow-y-auto pr-2">
         {/* Video Player */}
-        <div className="aspect-video bg-black rounded-2xl overflow-hidden shadow-2xl shadow-black/20 mb-6 shrink-0">
+        <div className="aspect-video bg-black rounded-2xl overflow-hidden shadow-2xl shadow-black/20 mb-6 shrink-0 relative">
           {activeVideo ? (
-            <ReactPlayer
-              url={`https://www.youtube.com/watch?v=${activeVideo.youtubeId}`}
+            <iframe
               width="100%"
               height="100%"
-              controls
-              onEnded={handleVideoComplete}
-              playing
-            />
+              src={`https://www.youtube.com/embed/${activeVideo.youtubeId}?enablejsapi=1`}
+              title={getLocalized(activeVideo.title)}
+              frameBorder="0"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowFullScreen
+              className="absolute inset-0 w-full h-full"
+            ></iframe>
           ) : (
             <div className="w-full h-full flex items-center justify-center text-white/50">
               Select a video to start learning
