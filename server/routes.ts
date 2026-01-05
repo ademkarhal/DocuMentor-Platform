@@ -69,13 +69,15 @@ async function seedDatabase() {
     icon: "pen-tool"
   });
 
+  // Course 1: React Mastery
   const course1 = await storage.createCourse({
     categoryId: cat1.id,
     slug: "react-mastery",
     title: { tr: "React Uzmanlık Eğitimi", en: "React Mastery" },
     description: { tr: "Modern web uygulamaları geliştirin", en: "Build modern web apps" },
     thumbnail: "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a7/React-icon.svg/1200px-React-icon.svg.png",
-    totalVideos: 3
+    totalVideos: 3,
+    nextcloudShareUrl: "https://nextcloud.example.com/s/react-files"
   });
 
   await storage.createVideo({
@@ -102,6 +104,82 @@ async function seedDatabase() {
     courseId: course1.id,
     title: { tr: "Ders Notları - PDF", en: "Lecture Notes - PDF" },
     fileUrl: "#",
+    fileType: "pdf"
+  });
+
+  // Course 2: Advanced Node.js
+  const course2 = await storage.createCourse({
+    categoryId: cat1.id,
+    slug: "advanced-nodejs",
+    title: { tr: "İleri Seviye Node.js", en: "Advanced Node.js" },
+    description: { tr: "Microservisler ve Ölçeklenebilir Sistemler", en: "Microservices and Scalable Systems" },
+    thumbnail: "https://upload.wikimedia.org/wikipedia/commons/thumb/d/d9/Node.js_logo.svg/1200px-Node.js_logo.svg.png",
+    totalVideos: 2,
+    nextcloudShareUrl: "https://nextcloud.example.com/s/nodejs-files"
+  });
+
+  await storage.createVideo({
+    courseId: course2.id,
+    title: { tr: "Node.js Mimarisi", en: "Node.js Architecture" },
+    description: { tr: "Event Loop ve Non-blocking I/O", en: "Event Loop and Non-blocking I/O" },
+    youtubeId: "M3qHa0MuRcs", // Node.js Crash Course
+    duration: 1200,
+    sequenceOrder: 1,
+    transcript: "Node.js runs on the V8 engine and uses an event-driven..."
+  });
+
+  await storage.createVideo({
+    courseId: course2.id,
+    title: { tr: "Microservisler ile Çalışmak", en: "Working with Microservices" },
+    description: { tr: "Servisler arası iletişim", en: "Inter-service communication" },
+    youtubeId: "y8IT-B77NJ0", // Microservices video
+    duration: 1500,
+    sequenceOrder: 2,
+    transcript: "Microservices architecture allows you to scale..."
+  });
+
+  await storage.createDocument({
+    courseId: course2.id,
+    title: { tr: "Kod Örnekleri - ZIP", en: "Code Samples - ZIP" },
+    fileUrl: "https://nextcloud.example.com/s/nodejs-files/download",
+    fileType: "zip"
+  });
+
+  // Course 3: Python for Beginners
+  const course3 = await storage.createCourse({
+    categoryId: cat1.id,
+    slug: "python-beginners",
+    title: { tr: "Sıfırdan Python Programlama", en: "Python Programming from Scratch" },
+    description: { tr: "Python ile programlamaya giriş", en: "Introduction to programming with Python" },
+    thumbnail: "https://upload.wikimedia.org/wikipedia/commons/thumb/c/c3/Python-logo-notext.svg/1200px-Python-logo-notext.svg.png",
+    totalVideos: 2,
+    nextcloudShareUrl: "https://nextcloud.example.com/s/python-files"
+  });
+
+  await storage.createVideo({
+    courseId: course3.id,
+    title: { tr: "Python Kurulumu ve İlk Kod", en: "Python Setup and First Code" },
+    description: { tr: "Python ortamını hazırlama", en: "Setting up Python environment" },
+    youtubeId: "_uQrJ0TkZlc", // Python tutorial
+    duration: 900,
+    sequenceOrder: 1,
+    transcript: "Python is a popular programming language..."
+  });
+
+  await storage.createVideo({
+    courseId: course3.id,
+    title: { tr: "Değişkenler ve Veri Tipleri", en: "Variables and Data Types" },
+    description: { tr: "Python'da temel yapılar", en: "Basic structures in Python" },
+    youtubeId: "rfscVS0vtbw", // FreeCodeCamp Python
+    duration: 1100,
+    sequenceOrder: 2,
+    transcript: "Variables are used to store data values..."
+  });
+
+  await storage.createDocument({
+    courseId: course3.id,
+    title: { tr: "Python Hile Sayfası - PDF", en: "Python Cheat Sheet - PDF" },
+    fileUrl: "https://nextcloud.example.com/s/python-files/cheatsheet",
     fileType: "pdf"
   });
 }

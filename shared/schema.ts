@@ -17,6 +17,7 @@ export const courses = pgTable("courses", {
   description: jsonb("description").notNull(),
   thumbnail: text("thumbnail").notNull(),
   totalVideos: integer("total_videos").default(0),
+  nextcloudShareUrl: text("nextcloud_share_url"),
 });
 
 export const videos = pgTable("videos", {
