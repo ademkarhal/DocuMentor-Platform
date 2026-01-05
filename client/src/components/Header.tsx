@@ -1,4 +1,4 @@
-import { Search, Globe, Moon, Sun, Monitor } from "lucide-react";
+import { Search, Globe, Moon, Sun, Monitor, MonitorPlay } from "lucide-react";
 import { useTranslation, useStore } from "@/hooks/use-store";
 import { useState, useEffect } from "react";
 import { useSearch } from "@/hooks/use-api";

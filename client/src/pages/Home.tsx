@@ -5,7 +5,7 @@ import { ArrowRight, PlayCircle, Book, Layers } from "lucide-react";
 import { motion } from "framer-motion";
 
 export default function Home() {
-  const { t, getLocalized } = useTranslation();
+  const { t, getLocalized, lang } = useTranslation();
   const { data: categories, isLoading: catLoading } = useCategories();
   const { data: courses, isLoading: coursesLoading } = useCourses();
 
