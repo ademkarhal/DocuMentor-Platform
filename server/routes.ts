@@ -4,8 +4,8 @@ import { storage } from "./storage";
 import { api } from "@shared/routes";
 import { fetchPlaylistVideos, getPlaylistInfo } from "./youtube";
 
-// Playlist IDs - New playlist with embed support
-const PYTHON_PLAYLIST_ID = "PLWctyKyPphPgqzd2Np8VlKiXhkpAjSV0c";
+// Playlist IDs
+const FLUTTER_PLAYLIST_ID = "PLQVXoXFVVtp1DFmoTL4cPTWEWiqndKexZ";
 
 export async function registerRoutes(
   httpServer: Server,
@@ -79,29 +79,29 @@ async function seedDatabaseFromYouTube() {
     icon: "code"
   });
 
-  // Fetch Python playlist info and videos
-  console.log("Fetching Python playlist...");
-  const pythonInfo = await getPlaylistInfo(PYTHON_PLAYLIST_ID);
-  const pythonVideos = await fetchPlaylistVideos(PYTHON_PLAYLIST_ID);
+  // Fetch Flutter playlist info and videos
+  console.log("Fetching Flutter playlist...");
+  const flutterInfo = await getPlaylistInfo(FLUTTER_PLAYLIST_ID);
+  const flutterVideos = await fetchPlaylistVideos(FLUTTER_PLAYLIST_ID);
   
-  if (pythonVideos.length > 0) {
+  if (flutterVideos.length > 0) {
     const course1 = await storage.createCourse({
       categoryId: cat1.id,
-      slug: "python-course",
+      slug: "flutter-course",
       title: { 
-        tr: pythonInfo?.title || "Python Dersleri", 
-        en: pythonInfo?.title || "Python Course" 
+        tr: flutterInfo?.title || "Flutter Dersleri", 
+        en: flutterInfo?.title || "Flutter Course" 
       },
       description: { 
-        tr: pythonInfo?.description || "Sıfırdan ileri seviye Python programlama", 
-        en: pythonInfo?.description || "Python programming from scratch" 
+        tr: flutterInfo?.description || "Flutter ile mobil uygulama geliştirme", 
+        en: flutterInfo?.description || "Mobile app development with Flutter" 
       },
-      thumbnail: pythonInfo?.thumbnail || "https://images.unsplash.com/photo-1526379095098-d400fd0bf935?w=800&q=80",
-      totalVideos: pythonVideos.length,
+      thumbnail: flutterInfo?.thumbnail || "https://images.unsplash.com/photo-1512941937669-90a1b58e7e9c?w=800&q=80",
+      totalVideos: flutterVideos.length,
       nextcloudShareUrl: ""
     });
 
-    for (const video of pythonVideos) {
+    for (const video of flutterVideos) {
       await storage.createVideo({
         courseId: course1.id,
         title: { tr: video.title, en: video.title },
@@ -111,7 +111,7 @@ async function seedDatabaseFromYouTube() {
         sequenceOrder: video.sequenceOrder
       });
     }
-    console.log(`Added ${pythonVideos.length} videos for Python course`);
+    console.log(`Added ${flutterVideos.length} videos for Flutter course`);
   }
 
   console.log("Database seeding completed!");
