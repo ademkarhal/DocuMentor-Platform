@@ -2,6 +2,11 @@ import type { Express } from "express";
 import type { Server } from "http";
 import { storage } from "./storage";
 import { api } from "@shared/routes";
+import { fetchPlaylistVideos, getPlaylistInfo } from "./youtube";
+
+// Playlist IDs
+const WEB_DEV_PLAYLIST_ID = "PLURN6mxdcwL-xIXzq92ZJN9yRW7Q0mjzw";
+const FLUTTER_PLAYLIST_ID = "PLaZoPjR0BnOG9z5aJ4zudiL3TmfaBZ2Qm";
 
 export async function registerRoutes(
   httpServer: Server,
@@ -57,15 +62,17 @@ export async function registerRoutes(
     res.json(results);
   });
 
-  // Seed Data
-  await seedDatabase();
+  // Seed Data from YouTube Playlists
+  await seedDatabaseFromYouTube();
 
   return httpServer;
 }
 
-async function seedDatabase() {
+async function seedDatabaseFromYouTube() {
   const categories = await storage.getCategories();
   if (categories.length > 0) return;
+
+  console.log("Seeding database from YouTube playlists...");
 
   const cat1 = await storage.createCategory({
     slug: "software-development",
@@ -73,79 +80,75 @@ async function seedDatabase() {
     icon: "code"
   });
 
-  const cat2 = await storage.createCategory({
-    slug: "design",
-    title: { tr: "Tasarım", en: "Design" },
-    icon: "pen-tool"
-  });
-
-  // Course 1: Advanced Node.js (Full Stack)
-  const course1 = await storage.createCourse({
-    categoryId: cat1.id,
-    slug: "modern-web-development",
-    title: { tr: "Sıfırdan İleri Seviye Web Geliştirme (Full Stack)", en: "Modern Web Development (Full Stack)" },
-    description: { tr: "Sıfırdan ileri seviye web geliştirme", en: "Full stack web development from scratch" },
-    thumbnail: "https://images.unsplash.com/photo-1587620962725-abab7fe55159?w=800&q=80",
-    totalVideos: 10,
-    nextcloudShareUrl: "https://nextcloud.example.com/s/webdev-files"
-  });
-
-  const webDevVideos = [
-    { youtubeId: "wSDZyaLlCeo", title: { tr: "Web Geliştirme Giriş", en: "Web Dev Intro" }, duration: 1200 },
-    { youtubeId: "8u8W4U9y6QA", title: { tr: "HTML & CSS Temelleri", en: "HTML & CSS Basics" }, duration: 1500 },
-    { youtubeId: "f02pL7n-5tU", title: { tr: "JavaScript'e Giriş", en: "Introduction to JavaScript" }, duration: 1800 },
-    { youtubeId: "vLnH9M-nIqc", title: { tr: "React Temelleri", en: "React Fundamentals" }, duration: 2000 },
-    { youtubeId: "mH_iHwL3X6M", title: { tr: "Node.js Giriş", en: "Introduction to Node.js" }, duration: 1600 },
-    { youtubeId: "L72fhGm1L-A", title: { tr: "Express.js ile API Geliştirme", en: "API Development with Express.js" }, duration: 1900 },
-    { youtubeId: "SccSCuHhbc0", title: { tr: "MongoDB & Mongoose", en: "MongoDB & Mongoose" }, duration: 2100 },
-    { youtubeId: "W6NZfCO5SIk", title: { tr: "JWT Kimlik Doğrulama", en: "JWT Authentication" }, duration: 2200 },
-    { youtubeId: "fBNz5xF-Kx4", title: { tr: "Frontend & Backend Entegrasyonu", en: "Frontend & Backend Integration" }, duration: 2400 },
-    { youtubeId: "9o9B_uM3-W8", title: { tr: "Uygulamayı Yayına Alma", en: "Deploying the Application" }, duration: 1500 }
-  ];
-
-  for (let i = 0; i < webDevVideos.length; i++) {
-    await storage.createVideo({
-      courseId: course1.id,
-      title: webDevVideos[i].title,
-      description: { tr: "Detaylı eğitim içeriği", en: "Detailed tutorial content" },
-      youtubeId: webDevVideos[i].youtubeId,
-      duration: webDevVideos[i].duration,
-      sequenceOrder: i + 1
+  // Fetch Web Development playlist info and videos
+  console.log("Fetching Web Development playlist...");
+  const webDevInfo = await getPlaylistInfo(WEB_DEV_PLAYLIST_ID);
+  const webDevVideos = await fetchPlaylistVideos(WEB_DEV_PLAYLIST_ID);
+  
+  if (webDevVideos.length > 0) {
+    const course1 = await storage.createCourse({
+      categoryId: cat1.id,
+      slug: "web-development",
+      title: { 
+        tr: webDevInfo?.title || "Web Geliştirme", 
+        en: webDevInfo?.title || "Web Development" 
+      },
+      description: { 
+        tr: webDevInfo?.description || "Sıfırdan ileri seviye web geliştirme", 
+        en: webDevInfo?.description || "Web development from scratch" 
+      },
+      thumbnail: webDevInfo?.thumbnail || "https://images.unsplash.com/photo-1587620962725-abab7fe55159?w=800&q=80",
+      totalVideos: webDevVideos.length,
+      nextcloudShareUrl: ""
     });
+
+    for (const video of webDevVideos) {
+      await storage.createVideo({
+        courseId: course1.id,
+        title: { tr: video.title, en: video.title },
+        description: { tr: video.description, en: video.description },
+        youtubeId: video.youtubeId,
+        duration: video.duration,
+        sequenceOrder: video.sequenceOrder
+      });
+    }
+    console.log(`Added ${webDevVideos.length} videos for Web Development course`);
   }
 
-  // Course 2: Mobile App Development (Flutter)
-  const course2 = await storage.createCourse({
-    categoryId: cat1.id,
-    slug: "mobile-app-development",
-    title: { tr: "Mobil Uygulama Geliştirme (Flutter)", en: "Mobile App Development (Flutter)" },
-    description: { tr: "Sıfırdan Flutter ile mobil uygulamalar", en: "Mobile apps with Flutter from scratch" },
-    thumbnail: "https://images.unsplash.com/photo-1512941937669-90a1b58e7e9c?w=800&q=80",
-    totalVideos: 10,
-    nextcloudShareUrl: "https://nextcloud.example.com/s/flutter-files"
-  });
-
-  const flutterVideos = [
-    { youtubeId: "m14P_UQvrug", title: { tr: "Flutter'a Giriş", en: "Introduction to Flutter" }, duration: 1100 },
-    { youtubeId: "x0uinJ5DX3c", title: { tr: "Dart Programlama Dili", en: "Dart Programming Language" }, duration: 1400 },
-    { youtubeId: "GLSG_Wh_YWc", title: { tr: "Widget Yapısı", en: "Widget Structure" }, duration: 1300 },
-    { youtubeId: "jx_yLqP3Xm8", title: { tr: "State Management", en: "State Management" }, duration: 1700 },
-    { youtubeId: "ZpP9o4-u2E4", title: { tr: "API Entegrasyonu", en: "API Integration" }, duration: 1900 },
-    { youtubeId: "rD7Mh9Z-u9o", title: { tr: "Firebase Kurulumu", en: "Firebase Setup" }, duration: 1600 },
-    { youtubeId: "2_m_vD-L6l0", title: { tr: "Cloud Firestore Kullanımı", en: "Using Cloud Firestore" }, duration: 1800 },
-    { youtubeId: "8D_Nf8iI7u4", title: { tr: "Flutter Animasyonlar", en: "Flutter Animations" }, duration: 1400 },
-    { youtubeId: "v9CHRlbLj5s", title: { tr: "Uygulama İkonu & Splash Screen", en: "App Icon & Splash Screen" }, duration: 1200 },
-    { youtubeId: "R6vM0r_S0Xk", title: { tr: "Play Store & App Store Yayınlama", en: "Play Store & App Store Publishing" }, duration: 2000 }
-  ];
-
-  for (let i = 0; i < flutterVideos.length; i++) {
-    await storage.createVideo({
-      courseId: course2.id,
-      title: flutterVideos[i].title,
-      description: { tr: "Flutter ile geliştirme", en: "Development with Flutter" },
-      youtubeId: flutterVideos[i].youtubeId,
-      duration: flutterVideos[i].duration,
-      sequenceOrder: i + 1
+  // Fetch Flutter playlist info and videos
+  console.log("Fetching Flutter playlist...");
+  const flutterInfo = await getPlaylistInfo(FLUTTER_PLAYLIST_ID);
+  const flutterVideos = await fetchPlaylistVideos(FLUTTER_PLAYLIST_ID);
+  
+  if (flutterVideos.length > 0) {
+    const course2 = await storage.createCourse({
+      categoryId: cat1.id,
+      slug: "flutter-development",
+      title: { 
+        tr: flutterInfo?.title || "Flutter ile Mobil Uygulama Geliştirme", 
+        en: flutterInfo?.title || "Mobile App Development with Flutter" 
+      },
+      description: { 
+        tr: flutterInfo?.description || "Sıfırdan Flutter ile mobil uygulamalar", 
+        en: flutterInfo?.description || "Mobile apps with Flutter from scratch" 
+      },
+      thumbnail: flutterInfo?.thumbnail || "https://images.unsplash.com/photo-1512941937669-90a1b58e7e9c?w=800&q=80",
+      totalVideos: flutterVideos.length,
+      nextcloudShareUrl: ""
     });
+
+    for (const video of flutterVideos) {
+      await storage.createVideo({
+        courseId: course2.id,
+        title: { tr: video.title, en: video.title },
+        description: { tr: video.description, en: video.description },
+        youtubeId: video.youtubeId,
+        duration: video.duration,
+        sequenceOrder: video.sequenceOrder
+      });
+    }
+    console.log(`Added ${flutterVideos.length} videos for Flutter course`);
   }
+
+  console.log("Database seeding completed!");
 }

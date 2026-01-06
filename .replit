@@ -40,3 +40,8 @@ waitForPort = 5000
 
 [agent]
 expertMode = true
+
+[userenv]
+
+[userenv.shared]
+YOUTUBE_API_KEY = "AIzaSyAucuoUjueNF3x-4MvSVIvnrYF2-4PJRXo"
