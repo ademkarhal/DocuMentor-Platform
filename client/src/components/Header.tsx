@@ -74,16 +74,24 @@ export function Header() {
                     <button
                       key={`${result.type}-${result.id}`}
                       onClick={() => handleSearchSelect(result.url)}
-                      className="w-full text-left px-4 py-3 hover:bg-muted/50 transition-colors flex items-start gap-3 group"
+                      className={cn(
+                        "w-full text-left hover:bg-muted/50 transition-colors flex items-start gap-3 group",
+                        result.type === 'course' ? "px-4 py-3" : "pl-10 pr-4 py-2"
+                      )}
                     >
                       <div className={cn(
-                        "mt-0.5 w-8 h-8 rounded-lg flex items-center justify-center shrink-0",
-                        result.type === 'course' ? "bg-primary/10 text-primary" : "bg-accent/10 text-accent"
+                        "mt-0.5 rounded-lg flex items-center justify-center shrink-0",
+                        result.type === 'course' 
+                          ? "w-8 h-8 bg-primary/10 text-primary" 
+                          : "w-6 h-6 bg-muted text-muted-foreground"
                       )}>
-                        {result.type === 'course' ? <Monitor className="w-4 h-4" /> : <MonitorPlay className="w-4 h-4" />}
+                        {result.type === 'course' ? <Monitor className="w-4 h-4" /> : <MonitorPlay className="w-3 h-3" />}
                       </div>
-                      <div>
-                        <p className="font-medium text-sm group-hover:text-primary transition-colors line-clamp-1">
+                      <div className="flex-1 min-w-0">
+                        <p className={cn(
+                          "group-hover:text-primary transition-colors line-clamp-1",
+                          result.type === 'course' ? "font-semibold text-sm" : "text-sm"
+                        )}>
                           {getLocalized(result.title)}
                         </p>
                         <p className="text-xs text-muted-foreground mt-0.5">

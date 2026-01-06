@@ -184,15 +184,27 @@ export function useCourseDocuments(courseId: number | undefined) {
   });
 }
 
+// Extended search result with parent course info
+export interface ExtendedSearchResult {
+  type: 'course' | 'video';
+  id: number;
+  title: unknown;
+  url: string;
+  relevance: number;
+  courseId?: number;
+  courseName?: string;
+  courseSlug?: string;
+}
+
 // Search - uses localStorage cached data first, falls back to API
 export function useSearch(query: string) {
-  return useQuery<SearchResponse>({
+  return useQuery<ExtendedSearchResult[]>({
     queryKey: [api.search.query.path, query],
     queryFn: async () => {
       if (!query || query.length < 2) return [];
       
       const searchTerm = query.toLowerCase().trim();
-      const results: SearchResponse = [];
+      const results: ExtendedSearchResult[] = [];
       
       // Try to search from cached courses first
       const cachedCourses = getFromCache('courses') as CourseListResponse | null;
@@ -203,19 +215,13 @@ export function useSearch(query: string) {
           const descEn = (course.description as { en: string; tr: string })?.en?.toLowerCase() || '';
           const descTr = (course.description as { en: string; tr: string })?.tr?.toLowerCase() || '';
           
-          if (titleEn.includes(searchTerm) || titleTr.includes(searchTerm) || 
-              descEn.includes(searchTerm) || descTr.includes(searchTerm)) {
-            results.push({
-              type: 'course' as const,
-              id: course.id,
-              title: course.title,
-              url: `/courses/${course.slug}`,
-              relevance: 1
-            });
-          }
+          const courseMatches = titleEn.includes(searchTerm) || titleTr.includes(searchTerm) || 
+              descEn.includes(searchTerm) || descTr.includes(searchTerm);
           
           // Search videos in this course from cache
           const cachedVideos = getFromCache(`videos_${course.id}`) as VideoListResponse | null;
+          const matchingVideos: ExtendedSearchResult[] = [];
+          
           if (cachedVideos) {
             cachedVideos.forEach(video => {
               const vTitleEn = (video.title as { en: string; tr: string })?.en?.toLowerCase() || '';
@@ -225,21 +231,37 @@ export function useSearch(query: string) {
               
               if (vTitleEn.includes(searchTerm) || vTitleTr.includes(searchTerm) || 
                   vDescEn.includes(searchTerm) || vDescTr.includes(searchTerm)) {
-                results.push({
+                matchingVideos.push({
                   type: 'video' as const,
                   id: video.id,
                   title: video.title,
                   url: `/courses/${course.slug}?video=${video.id}`,
-                  relevance: 2
+                  relevance: 1,
+                  courseId: course.id,
+                  courseName: (course.title as { en: string; tr: string })?.tr || (course.title as { en: string; tr: string })?.en,
+                  courseSlug: course.slug
                 });
               }
             });
           }
+          
+          // Add course if it matches or has matching videos
+          if (courseMatches || matchingVideos.length > 0) {
+            results.push({
+              type: 'course' as const,
+              id: course.id,
+              title: course.title,
+              url: `/courses/${course.slug}`,
+              relevance: 2,
+              courseId: course.id,
+              courseSlug: course.slug
+            });
+            
+            // Add matching videos under this course
+            results.push(...matchingVideos);
+          }
         });
       }
-      
-      // Sort by relevance (videos first since more specific)
-      results.sort((a, b) => b.relevance - a.relevance);
       
       // If we have cached results or cached courses, return them
       if (results.length > 0 || cachedCourses) {
@@ -250,7 +272,8 @@ export function useSearch(query: string) {
       const url = `${api.search.query.path}?q=${encodeURIComponent(query)}`;
       const res = await fetch(url);
       if (!res.ok) throw new Error("Search failed");
-      return api.search.query.responses[200].parse(await res.json()) as SearchResponse;
+      const apiResults = api.search.query.responses[200].parse(await res.json()) as SearchResponse;
+      return apiResults.map(r => ({ ...r, courseId: undefined, courseName: undefined, courseSlug: undefined }));
     },
     enabled: query.length >= 2,
     staleTime: 0, 
