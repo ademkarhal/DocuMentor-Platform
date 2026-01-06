@@ -44,41 +44,48 @@ export interface Document {
   fileType: string;
 }
 
-const PLAYLISTS = [
-  {
-    id: "PLQVXoXFVVtp3e_urGZcMNAHx2Eo4Rm5Xk",
-    slug: "csharp-course",
-    defaultTitle: { tr: "C# Programlama Dersleri", en: "C# Programming Course" },
-    defaultDescription: { tr: "C# ile programlama eğitimi", en: "Programming with C#" }
-  },
-  {
-    id: "PLQVXoXFVVtp1DFmoTL4cPTWEWiqndKexZ",
-    slug: "aspnet-core-course",
-    defaultTitle: { tr: "ASP.NET Core Dersleri", en: "ASP.NET Core Course" },
-    defaultDescription: { tr: "ASP.NET Core ile web geliştirme", en: "Web development with ASP.NET Core" }
-  },
-  {
-    id: "PLURN6mxdcwL-xIXzq92ZJN9yRW7Q0mjzw",
-    slug: "react-course",
-    defaultTitle: { tr: "React Dersleri", en: "React Course" },
-    defaultDescription: { tr: "React ile frontend geliştirme", en: "Frontend development with React" }
-  },
-  {
-    id: "PLaZoPjR0BnOG9z5aJ4zudiL3TmfaBZ2Qm",
-    slug: "nextjs-course",
-    defaultTitle: { tr: "NextJS Dersleri", en: "NextJS Course" },
-    defaultDescription: { tr: "NextJS ile modern web uygulamaları", en: "Modern web apps with NextJS" }
-  }
-];
+interface PlaylistConfig {
+  url: string;
+  categoryId: number;
+  slug: string;
+  defaultTitle: BilingualText;
+  defaultDescription: BilingualText;
+}
 
+interface ConfigData {
+  categories: Category[];
+  playlists: PlaylistConfig[];
+}
+
+const CONFIG_FILE = path.join(process.cwd(), "config/playlists.json");
 const CACHE_FILE = "/tmp/youtube_cache.json";
 const CACHE_DURATION = 24 * 60 * 60 * 1000; // 24 hours
 
-interface CacheData {
+interface PlaylistCacheEntry {
   timestamp: number;
-  categories: Category[];
-  courses: Course[];
+  playlistUrl: string;
+  course: Course;
   videos: Video[];
+}
+
+interface CacheData {
+  categories: Category[];
+  playlists: { [slug: string]: PlaylistCacheEntry };
+}
+
+function extractPlaylistId(url: string): string | null {
+  const match = url.match(/[?&]list=([^&]+)/);
+  return match ? match[1] : null;
+}
+
+function loadConfig(): ConfigData {
+  try {
+    const content = fs.readFileSync(CONFIG_FILE, 'utf-8');
+    return JSON.parse(content) as ConfigData;
+  } catch (e) {
+    console.error("Error reading config file:", e);
+    return { categories: [], playlists: [] };
+  }
 }
 
 class MemoryStorage {
@@ -88,6 +95,7 @@ class MemoryStorage {
   private documents: Document[] = [];
   private initialized = false;
   private initPromise: Promise<void> | null = null;
+  private cache: CacheData = { categories: [], playlists: {} };
 
   async initialize(): Promise<void> {
     if (this.initialized) return;
@@ -98,35 +106,20 @@ class MemoryStorage {
     this.initialized = true;
   }
 
-  private loadFromCache(): CacheData | null {
+  private loadCacheFromDisk(): CacheData | null {
     try {
       if (!fs.existsSync(CACHE_FILE)) return null;
-      
       const content = fs.readFileSync(CACHE_FILE, 'utf-8');
-      const data = JSON.parse(content) as CacheData;
-      
-      if (Date.now() - data.timestamp > CACHE_DURATION) {
-        console.log("Cache expired, will fetch fresh data");
-        return null;
-      }
-      
-      console.log("Loading data from cache...");
-      return data;
+      return JSON.parse(content) as CacheData;
     } catch (e) {
-      console.log("Cache read error, will fetch fresh data");
+      console.log("Cache read error");
       return null;
     }
   }
 
-  private saveToCache(): void {
+  private saveCacheToDisk(): void {
     try {
-      const data: CacheData = {
-        timestamp: Date.now(),
-        categories: this.categories,
-        courses: this.courses,
-        videos: this.videos
-      };
-      fs.writeFileSync(CACHE_FILE, JSON.stringify(data));
+      fs.writeFileSync(CACHE_FILE, JSON.stringify(this.cache));
       console.log("Data saved to cache");
     } catch (e) {
       console.log("Cache write error:", e);
@@ -134,113 +127,124 @@ class MemoryStorage {
   }
 
   private async loadData(): Promise<void> {
-    const cached = this.loadFromCache();
+    const config = loadConfig();
+    const diskCache = this.loadCacheFromDisk();
     
-    if (cached) {
-      this.categories = cached.categories;
-      this.courses = cached.courses;
-      this.videos = cached.videos;
-      console.log(`Loaded from cache: ${this.courses.length} courses, ${this.videos.length} videos`);
-      return;
+    if (diskCache) {
+      this.cache = diskCache;
     }
-
-    await this.fetchFromYouTube();
-  }
-
-  private async fetchFromYouTube(): Promise<void> {
-    console.log("Fetching data from YouTube...");
-
-    // Reset arrays
-    this.categories = [];
+    
+    // Always use categories from config file
+    this.categories = config.categories;
+    this.cache.categories = config.categories;
+    
+    // Reset courses and videos arrays
     this.courses = [];
     this.videos = [];
-
-    // Hierarchical categories - Takip 7/24 as main parent
-    this.categories.push({
-      id: 1,
-      slug: "takip-724",
-      title: { tr: "Takip 7/24", en: "Takip 7/24" },
-      icon: "monitor",
-      parentId: null
-    });
-
-    // Sub-categories under Takip 7/24
-    this.categories.push({
-      id: 2,
-      slug: "musteri-paneli",
-      title: { tr: "Müşteri Paneli", en: "Customer Panel" },
-      icon: "users",
-      parentId: 1
-    });
-
-    this.categories.push({
-      id: 3,
-      slug: "genel-yonetim-paneli",
-      title: { tr: "Genel Yönetim Paneli", en: "General Management Panel" },
-      icon: "settings",
-      parentId: 1
-    });
-
-    this.categories.push({
-      id: 4,
-      slug: "mobil-uygulama",
-      title: { tr: "Mobil Uygulama", en: "Mobile Application" },
-      icon: "smartphone",
-      parentId: 1
-    });
-
-    // Category assignments for courses (4 courses to 3 categories - C# goes to Müşteri Paneli)
-    const categoryAssignments = [2, 2, 3, 4]; // C# -> Müşteri Paneli, ASP.NET -> Müşteri Paneli, React -> Genel Yönetim, NextJS -> Mobil
-
+    
+    let courseIdCounter = 1;
     let videoIdCounter = 1;
-
-    // Fetch all playlists
-    for (let i = 0; i < PLAYLISTS.length; i++) {
-      const playlist = PLAYLISTS[i];
-      const courseId = i + 1;
-      const categoryId = categoryAssignments[i] || 1;
+    const now = Date.now();
+    
+    // Process each playlist from config
+    for (const playlist of config.playlists) {
+      const playlistId = extractPlaylistId(playlist.url);
+      if (!playlistId) {
+        console.log(`Invalid playlist URL: ${playlist.url}`);
+        continue;
+      }
       
-      console.log(`Fetching playlist: ${playlist.slug} (${playlist.id})`);
+      const cachedPlaylist = this.cache.playlists[playlist.slug];
+      const isCacheValid = cachedPlaylist && 
+                           cachedPlaylist.playlistUrl === playlist.url &&
+                           (now - cachedPlaylist.timestamp) < CACHE_DURATION;
       
-      const playlistInfo = await getPlaylistInfo(playlist.id);
-      const playlistVideos = await fetchPlaylistVideos(playlist.id);
-
-      if (playlistVideos.length > 0) {
-        this.courses.push({
-          id: courseId,
-          categoryId: categoryId,
-          slug: playlist.slug,
-          title: {
-            tr: playlistInfo?.title || playlist.defaultTitle.tr,
-            en: playlistInfo?.title || playlist.defaultTitle.en
-          },
-          description: {
-            tr: playlistInfo?.description || playlist.defaultDescription.tr,
-            en: playlistInfo?.description || playlist.defaultDescription.en
-          },
-          thumbnail: playlistInfo?.thumbnail || "https://images.unsplash.com/photo-1517694712202-14dd9538aa97?w=800&q=80",
-          totalVideos: playlistVideos.length,
-          nextcloudShareUrl: ""
-        });
-
-        playlistVideos.forEach((video) => {
+      if (isCacheValid && cachedPlaylist) {
+        // Use cached data - update IDs to be sequential
+        const course: Course = {
+          ...cachedPlaylist.course,
+          id: courseIdCounter,
+          categoryId: playlist.categoryId
+        };
+        this.courses.push(course);
+        
+        cachedPlaylist.videos.forEach((video) => {
           this.videos.push({
+            ...video,
             id: videoIdCounter++,
-            courseId: courseId,
-            title: { tr: video.title, en: video.title },
-            description: { tr: video.description, en: video.description },
-            youtubeId: video.youtubeId,
-            duration: video.duration,
-            sequenceOrder: video.sequenceOrder
+            courseId: courseIdCounter
           });
         });
-
-        console.log(`Fetched ${playlistVideos.length} videos for ${playlist.slug}`);
+        
+        console.log(`Loaded from cache: ${playlist.slug} (${cachedPlaylist.videos.length} videos)`);
+        courseIdCounter++;
+      } else {
+        // Fetch fresh data from YouTube
+        console.log(`Fetching playlist: ${playlist.slug} (${playlistId})`);
+        
+        const playlistInfo = await getPlaylistInfo(playlistId);
+        const playlistVideos = await fetchPlaylistVideos(playlistId);
+        
+        if (playlistVideos.length > 0) {
+          const course: Course = {
+            id: courseIdCounter,
+            categoryId: playlist.categoryId,
+            slug: playlist.slug,
+            title: {
+              tr: playlistInfo?.title || playlist.defaultTitle.tr,
+              en: playlistInfo?.title || playlist.defaultTitle.en
+            },
+            description: {
+              tr: playlistInfo?.description || playlist.defaultDescription.tr,
+              en: playlistInfo?.description || playlist.defaultDescription.en
+            },
+            thumbnail: playlistInfo?.thumbnail || "https://images.unsplash.com/photo-1517694712202-14dd9538aa97?w=800&q=80",
+            totalVideos: playlistVideos.length,
+            nextcloudShareUrl: ""
+          };
+          
+          this.courses.push(course);
+          
+          const videos: Video[] = [];
+          playlistVideos.forEach((video) => {
+            const v: Video = {
+              id: videoIdCounter++,
+              courseId: courseIdCounter,
+              title: { tr: video.title, en: video.title },
+              description: { tr: video.description, en: video.description },
+              youtubeId: video.youtubeId,
+              duration: video.duration,
+              sequenceOrder: video.sequenceOrder
+            };
+            videos.push(v);
+            this.videos.push(v);
+          });
+          
+          // Save to cache
+          this.cache.playlists[playlist.slug] = {
+            timestamp: now,
+            playlistUrl: playlist.url,
+            course: course,
+            videos: videos
+          };
+          
+          console.log(`Fetched ${playlistVideos.length} videos for ${playlist.slug}`);
+          courseIdCounter++;
+        }
       }
     }
-
+    
+    // Remove old playlists from cache that are no longer in config
+    const configSlugs = new Set(config.playlists.map(p => p.slug));
+    for (const slug of Object.keys(this.cache.playlists)) {
+      if (!configSlugs.has(slug)) {
+        delete this.cache.playlists[slug];
+        console.log(`Removed from cache: ${slug}`);
+      }
+    }
+    
     console.log(`Total: ${this.courses.length} courses, ${this.videos.length} videos`);
-    this.saveToCache();
+    this.saveCacheToDisk();
   }
 
   async getCategories(): Promise<Category[]> {
