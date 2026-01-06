@@ -202,7 +202,11 @@ export default function Home() {
         </Card>
 
         {/* Continue Learning Section */}
-        {stats.startedCourses.length > 0 ? (
+        {(() => {
+          const startedCoursesList = courses?.filter(c => stats.startedCourses.includes(String(c.id))) || [];
+          if (startedCoursesList.length === 0) return null;
+          
+          return (
           <div className="space-y-4">
             <div className="flex items-center justify-between gap-4">
               <h3 className="text-xl font-bold">
@@ -218,7 +222,7 @@ export default function Home() {
               </Link>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {courses?.filter(c => stats.startedCourses.includes(String(c.id))).slice(0, 3).map(course => {
+              {startedCoursesList.slice(0, 3).map(course => {
                 const courseCompletedCount = Object.keys(completedVideos).filter(key => key.startsWith(`${course.id}-`)).length;
                 const courseWatchedSeconds = Object.entries(videoProgress)
                   .filter(([key]) => key.startsWith(`${course.id}-`))
@@ -303,7 +307,8 @@ export default function Home() {
               })}
             </div>
           </div>
-) : null}
+          );
+        })()}
       </motion.div>
 
       {/* Hero Section */}
