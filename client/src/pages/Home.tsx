@@ -64,12 +64,23 @@ export default function Home() {
     show: { opacity: 1, y: 0 }
   };
 
+  // Calculate watched time for started courses
+  const startedCoursesWatchedSeconds = stats.startedCourses.reduce((sum, courseId) => {
+    const courseProgress = Object.entries(videoProgress)
+      .filter(([key]) => key.startsWith(`${courseId}-`))
+      .reduce((acc, [_, seconds]) => acc + (seconds || 0), 0);
+    return sum + courseProgress;
+  }, 0);
+  const startedCoursesWatchedH = Math.floor(startedCoursesWatchedSeconds / 3600);
+  const startedCoursesWatchedM = Math.floor((startedCoursesWatchedSeconds % 3600) / 60);
+
   const dashboardCards = [
     {
       icon: Book,
       label: lang === 'tr' ? "Toplam Kurs" : "Total Courses",
       value: totalCourses,
-      subtext: formatDuration(totalDurationHours, totalDurationMinutes),
+      subtext: `/ ${totalCourses}`,
+      duration: formatDuration(totalDurationHours, totalDurationMinutes),
       color: "text-blue-500",
       bgColor: "bg-blue-500/10",
     },
@@ -78,6 +89,7 @@ export default function Home() {
       label: lang === 'tr' ? "Başlanan Kurs" : "Courses Started",
       value: stats.startedCourses.length,
       subtext: `/ ${totalCourses}`,
+      duration: formatDuration(startedCoursesWatchedH, startedCoursesWatchedM),
       color: "text-orange-500",
       bgColor: "bg-orange-500/10",
     },
@@ -86,6 +98,7 @@ export default function Home() {
       label: lang === 'tr' ? "Tamamlanan Kurs" : "Courses Completed",
       value: completedCourseCount,
       subtext: `/ ${totalCourses}`,
+      duration: null,
       color: "text-green-500",
       bgColor: "bg-green-500/10",
     },
@@ -93,7 +106,8 @@ export default function Home() {
       icon: PlayCircle,
       label: lang === 'tr' ? "Toplam Video" : "Total Videos",
       value: totalVideos,
-      subtext: formatDuration(totalDurationHours, totalDurationMinutes),
+      subtext: `/ ${totalVideos}`,
+      duration: formatDuration(totalDurationHours, totalDurationMinutes),
       color: "text-purple-500",
       bgColor: "bg-purple-500/10",
     },
@@ -102,6 +116,7 @@ export default function Home() {
       label: lang === 'tr' ? "Başlanan Video" : "Videos Started",
       value: stats.watchedCount,
       subtext: `/ ${totalVideos}`,
+      duration: formatDuration(watchedHours, watchedMinutes),
       color: "text-cyan-500",
       bgColor: "bg-cyan-500/10",
     },
@@ -110,6 +125,7 @@ export default function Home() {
       label: lang === 'tr' ? "Tamamlanan Video" : "Videos Completed",
       value: stats.completedCount,
       subtext: `/ ${totalVideos}`,
+      duration: null,
       color: "text-teal-500",
       bgColor: "bg-teal-500/10",
     },
@@ -118,6 +134,7 @@ export default function Home() {
       label: lang === 'tr' ? "İzleme Süresi" : "Watch Time",
       value: formatDuration(watchedHours, watchedMinutes),
       subtext: `/ ${formatDuration(totalDurationHours, totalDurationMinutes)}`,
+      duration: null,
       color: "text-pink-500",
       bgColor: "bg-pink-500/10",
     },
@@ -159,6 +176,12 @@ export default function Home() {
                     <span className="text-xs text-muted-foreground">{card.subtext}</span>
                   </div>
                   <p className="text-[10px] text-muted-foreground leading-tight">{card.label}</p>
+                  {card.duration && (
+                    <p className="text-[9px] text-muted-foreground/70 flex items-center gap-0.5">
+                      <Clock className="w-2.5 h-2.5" />
+                      {card.duration}
+                    </p>
+                  )}
                 </div>
               </CardContent>
             </Card>
