@@ -59,14 +59,14 @@ export default function Home() {
     },
     {
       icon: Target,
-      label: lang === 'tr' ? "Başlanan" : "Started",
+      label: lang === 'tr' ? "Başlanan Video" : "Videos Started",
       value: stats.watchedCount,
       color: "text-orange-500",
       bgColor: "bg-orange-500/10",
     },
     {
       icon: CheckCircle,
-      label: lang === 'tr' ? "Tamamlanan" : "Completed",
+      label: lang === 'tr' ? "Tamamlanan Video" : "Videos Completed",
       value: stats.completedCount,
       color: "text-green-500",
       bgColor: "bg-green-500/10",

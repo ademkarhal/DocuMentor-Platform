@@ -112,27 +112,37 @@ export default function VideoPlayer({
     clearProgressInterval();
     
     progressIntervalRef.current = setInterval(() => {
-      if (!playerRef.current || !activeSource) return;
+      const player = playerRef.current;
+      const source = activeSource;
+      
+      if (!player || !source) {
+        clearProgressInterval();
+        return;
+      }
       
       try {
-        const playerState = playerRef.current.getPlayerState();
+        if (typeof player.getPlayerState !== 'function') return;
+        
+        const playerState = player.getPlayerState();
         
         if (playerState !== 1) return;
         
-        const currentTime = playerRef.current.getCurrentTime();
-        const duration = playerRef.current.getDuration() || activeSource.duration;
+        if (typeof player.getCurrentTime !== 'function' || typeof player.getDuration !== 'function') return;
         
-        if (duration > 0) {
+        const currentTime = player.getCurrentTime();
+        const duration = player.getDuration() || source.duration;
+        
+        if (duration > 0 && !isNaN(currentTime) && !isNaN(duration)) {
           const percent = Math.min(Math.round((currentTime / duration) * 100), 100);
           
           if (onProgress) {
-            onProgress(activeSource.id, currentTime, duration, percent);
+            onProgress(source.id, currentTime, duration, percent);
           }
 
           if (percent >= 90 && !hasCompletedRef.current) {
             hasCompletedRef.current = true;
             if (onComplete) {
-              onComplete(activeSource.id);
+              onComplete(source.id);
             }
           }
 
@@ -145,7 +155,7 @@ export default function VideoPlayer({
           }
         }
       } catch {
-        // Player not ready yet
+        // Player not ready or destroyed
       }
     }, 1000);
   }, [activeSource, onProgress, onComplete, onVideoChange, activeIndex, sources.length, clearProgressInterval]);
