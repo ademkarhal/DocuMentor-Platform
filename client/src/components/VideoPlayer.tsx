@@ -11,6 +11,7 @@ interface VideoPlayerProps {
   sources: VideoSource[];
   activeIndex: number;
   initialPosition?: number;
+  isCurrentVideoCompleted?: boolean;
   onVideoChange?: (index: number) => void;
   onProgress?: (videoId: number, currentTime: number, duration: number, percent: number) => void;
   onComplete?: (videoId: number) => void;
@@ -86,6 +87,7 @@ export default function VideoPlayer({
   sources,
   activeIndex,
   initialPosition = 0,
+  isCurrentVideoCompleted = false,
   onVideoChange,
   onProgress,
   onComplete,
@@ -94,6 +96,7 @@ export default function VideoPlayer({
   const playerRef = useRef<YTPlayer | null>(null);
   const progressIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const hasCompletedRef = useRef<boolean>(false);
+  const wasAlreadyCompletedRef = useRef<boolean>(false);
   const containerIdRef = useRef<string>(`yt-player-${Math.random().toString(36).substr(2, 9)}`);
   const lastVideoIdRef = useRef<number | null>(null);
   const initialPositionRef = useRef<number>(initialPosition);
@@ -176,6 +179,7 @@ export default function VideoPlayer({
 
     if (isNewVideo) {
       hasCompletedRef.current = false;
+      wasAlreadyCompletedRef.current = isCurrentVideoCompleted;
     }
 
     const initPlayer = async () => {
@@ -207,7 +211,7 @@ export default function VideoPlayer({
             if (event.data === 1) {
               startProgressTracking();
             } else if (event.data === 0) {
-              // Video ended - mark complete and auto advance
+              // Video ended - mark complete and maybe auto advance
               clearProgressInterval();
               
               // Videoyu tamamlandı olarak işaretle (sadece bir kez)
@@ -224,14 +228,17 @@ export default function VideoPlayer({
                 }
               }
               
-              // Sonraki videoya geç (sadece ENDED state'te)
-              const nextIndex = activeIndexRef.current + 1;
-              if (nextIndex < sourcesLengthRef.current && onVideoChangeRef.current) {
-                setTimeout(() => {
-                  if (onVideoChangeRef.current) {
-                    onVideoChangeRef.current(nextIndex);
-                  }
-                }, 1000);
+              // Sonraki videoya geç - SADECE video daha önce tamamlanmamışsa
+              // Tekrar izlenen videolarda otomatik geçiş yapma
+              if (!wasAlreadyCompletedRef.current) {
+                const nextIndex = activeIndexRef.current + 1;
+                if (nextIndex < sourcesLengthRef.current && onVideoChangeRef.current) {
+                  setTimeout(() => {
+                    if (onVideoChangeRef.current) {
+                      onVideoChangeRef.current(nextIndex);
+                    }
+                  }, 1000);
+                }
               }
             } else {
               clearProgressInterval();

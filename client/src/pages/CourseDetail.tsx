@@ -188,6 +188,7 @@ export default function CourseDetail() {
           sources={videoSources}
           activeIndex={activeVideoIndex}
           initialPosition={getInitialPosition()}
+          isCurrentVideoCompleted={activeVideo ? isVideoCompleted(activeVideo.id) : false}
           onVideoChange={handleVideoChange}
           onProgress={handleVideoProgress}
           onComplete={handleVideoComplete}
