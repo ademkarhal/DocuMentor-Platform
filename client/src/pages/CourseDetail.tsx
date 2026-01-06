@@ -213,6 +213,7 @@ export default function CourseDetail() {
               <button
                 key={video.id}
                 onClick={() => handleVideoSelect(video.id)}
+                data-testid={`button-video-${video.id}`}
                 className={cn(
                   "w-full flex items-start gap-3 p-3 rounded-xl text-left transition-all duration-200 group relative",
                   isActive 
@@ -221,15 +222,17 @@ export default function CourseDetail() {
                 )}
               >
                 <div className={cn(
-                  "mt-0.5 shrink-0 transition-colors",
-                  isActive ? "text-primary-foreground" : isCompleted ? "text-green-500" : "text-muted-foreground"
+                  "mt-0.5 shrink-0 w-8 h-8 rounded-full flex items-center justify-center transition-all",
+                  isActive 
+                    ? "bg-primary-foreground/20 text-primary-foreground" 
+                    : isCompleted 
+                      ? "bg-green-100 dark:bg-green-900/30 text-green-500" 
+                      : "bg-muted text-muted-foreground group-hover:bg-primary group-hover:text-primary-foreground"
                 )}>
-                  {isActive ? (
-                    <Play className="w-4 h-4 fill-current" />
-                  ) : isCompleted ? (
+                  {isCompleted && !isActive ? (
                     <CheckCircle2 className="w-4 h-4" />
                   ) : (
-                    <span className="text-xs font-mono font-medium opacity-50 w-4 inline-block text-center">{index + 1}</span>
+                    <Play className="w-4 h-4 fill-current" />
                   )}
                 </div>
                 <div className="flex-1 min-w-0">
