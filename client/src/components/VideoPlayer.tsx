@@ -159,20 +159,8 @@ export default function VideoPlayer({
             onProgressRef.current(source.id, currentTime, duration, percent);
           }
 
-          if (percent >= 90 && !hasCompletedRef.current) {
-            hasCompletedRef.current = true;
-            if (onCompleteRef.current) {
-              onCompleteRef.current(source.id);
-            }
-          }
-
-          if (currentTime >= duration - 1) {
-            clearProgressInterval();
-            
-            if (activeIndexRef.current < sourcesLengthRef.current - 1 && onVideoChangeRef.current) {
-              setTimeout(() => onVideoChangeRef.current!(activeIndexRef.current + 1), 1500);
-            }
-          }
+          // Video tamamlandı = %100 (video sonuna kadar izlendiğinde)
+          // ENDED state'te tamamlanma işaretlenecek, burada sadece progress takibi yapılıyor
         }
       } catch {
         // Player not ready or destroyed
@@ -219,16 +207,31 @@ export default function VideoPlayer({
             if (event.data === 1) {
               startProgressTracking();
             } else if (event.data === 0) {
-              // Video ended - auto advance to next
+              // Video ended - mark complete and auto advance
               clearProgressInterval();
+              
+              // Videoyu tamamlandı olarak işaretle (sadece bir kez)
               if (!hasCompletedRef.current) {
                 hasCompletedRef.current = true;
                 if (onCompleteRef.current && activeSource) {
                   onCompleteRef.current(activeSource.id);
                 }
+                
+                // Progress'i %100 olarak gönder
+                if (onProgressRef.current && activeSource) {
+                  const duration = activeSource.duration || 1;
+                  onProgressRef.current(activeSource.id, duration, duration, 100);
+                }
               }
-              if (activeIndexRef.current < sourcesLengthRef.current - 1 && onVideoChangeRef.current) {
-                setTimeout(() => onVideoChangeRef.current!(activeIndexRef.current + 1), 1000);
+              
+              // Sonraki videoya geç (sadece ENDED state'te)
+              const nextIndex = activeIndexRef.current + 1;
+              if (nextIndex < sourcesLengthRef.current && onVideoChangeRef.current) {
+                setTimeout(() => {
+                  if (onVideoChangeRef.current) {
+                    onVideoChangeRef.current(nextIndex);
+                  }
+                }, 1000);
               }
             } else {
               clearProgressInterval();
