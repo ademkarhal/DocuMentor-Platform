@@ -35,6 +35,13 @@ export default function CourseDetail() {
         const index = sortedVideos.findIndex(v => v.id === parseInt(videoId));
         if (index !== -1) {
           setActiveVideoIndex(index);
+          // Scroll to the video in the list
+          setTimeout(() => {
+            const videoButton = document.querySelector(`[data-testid="button-video-${videoId}"]`);
+            if (videoButton) {
+              videoButton.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+          }, 100);
         }
       }
     }
@@ -307,13 +314,10 @@ export default function CourseDetail() {
             {/* Current Video Info */}
             {activeVideo && (
               <div className="bg-card border border-border rounded-2xl p-6">
-                <div className="flex items-start justify-between gap-4 flex-wrap">
+                <div className="flex items-start justify-between gap-4 flex-wrap mb-4">
                   <div className="flex-1 min-w-0">
                     <h3 className="text-lg font-bold mb-2">{lang === 'tr' ? 'Şu an izleniyor' : 'Now Playing'}</h3>
                     <p className="font-medium">{getLocalized(activeVideo.title as any)}</p>
-                    <p className="text-sm text-muted-foreground mt-1">
-                      {getLocalized(activeVideo.description as any)}
-                    </p>
                   </div>
                   <div 
                     className={cn(
@@ -334,6 +338,24 @@ export default function CourseDetail() {
                     )}
                   </div>
                 </div>
+                
+                {/* Video Description */}
+                <div className="border-t border-border pt-4">
+                  <h4 className="text-sm font-semibold mb-2">{lang === 'tr' ? 'Video Açıklaması' : 'Video Description'}</h4>
+                  <p className="text-sm text-muted-foreground whitespace-pre-wrap leading-relaxed">
+                    {getLocalized(activeVideo.description as any) || (lang === 'tr' ? 'Bu video için açıklama bulunmamaktadır.' : 'No description available for this video.')}
+                  </p>
+                </div>
+
+                {/* Transcript if available */}
+                {(activeVideo as any).transcript && (
+                  <div className="border-t border-border pt-4 mt-4">
+                    <h4 className="text-sm font-semibold mb-2">{lang === 'tr' ? 'Video Transkripti' : 'Video Transcript'}</h4>
+                    <p className="text-sm text-muted-foreground whitespace-pre-wrap leading-relaxed max-h-48 overflow-y-auto">
+                      {(activeVideo as any).transcript}
+                    </p>
+                  </div>
+                )}
               </div>
             )}
           </TabsContent>

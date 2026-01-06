@@ -40,6 +40,18 @@ function setToCache(key: string, data: unknown): void {
   }
 }
 
+// Clear all API cache
+export function clearApiCache(): void {
+  const keysToRemove: string[] = [];
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i);
+    if (key && key.startsWith('api_cache_')) {
+      keysToRemove.push(key);
+    }
+  }
+  keysToRemove.forEach(key => localStorage.removeItem(key));
+}
+
 type CategoryListResponse = z.infer<typeof api.categories.list.responses[200]>;
 type CategoryResponse = z.infer<typeof api.categories.get.responses[200]>;
 type CourseListResponse = z.infer<typeof api.courses.list.responses[200]>;

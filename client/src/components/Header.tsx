@@ -1,10 +1,10 @@
-import { Search, Globe, Moon, Sun, Monitor, MonitorPlay } from "lucide-react";
+import { Search, Globe, Moon, Sun, Monitor, MonitorPlay, RefreshCw } from "lucide-react";
 import { useTranslation, useStore } from "@/hooks/use-store";
 import { useState, useEffect } from "react";
-import { useSearch } from "@/hooks/use-api";
-import { Link, useLocation } from "wouter";
+import { useSearch, clearApiCache } from "@/hooks/use-api";
+import { useLocation } from "wouter";
 import { cn } from "@/lib/utils";
-import { useDebounce } from "@/lib/utils"; // Assuming utils has debounce, or we implement inline logic
+import { queryClient } from "@/lib/queryClient";
 
 export function Header() {
   const { t, lang, getLocalized } = useTranslation();
@@ -14,6 +14,20 @@ export function Header() {
   const { data: searchResults } = useSearch(debouncedQuery);
   const [showResults, setShowResults] = useState(false);
   const [, setLocation] = useLocation();
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  const handleRefreshData = async () => {
+    setIsRefreshing(true);
+    try {
+      clearApiCache();
+      await queryClient.invalidateQueries();
+      await queryClient.refetchQueries();
+    } catch (error) {
+      console.error('Refresh failed:', error);
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
 
   useEffect(() => {
     const timer = setTimeout(() => setDebouncedQuery(searchQuery), 300);
@@ -72,8 +86,10 @@ export function Header() {
                         <p className="font-medium text-sm group-hover:text-primary transition-colors line-clamp-1">
                           {getLocalized(result.title)}
                         </p>
-                        <p className="text-xs text-muted-foreground capitalize mt-0.5">
-                          {result.type} • Relevance: {Math.round(result.relevance * 100)}%
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                          {result.type === 'course' 
+                            ? (lang === 'tr' ? 'Kurs' : 'Course')
+                            : (lang === 'tr' ? 'Video Dersi' : 'Video Lesson')}
                         </p>
                       </div>
                     </button>
@@ -87,9 +103,23 @@ export function Header() {
 
       <div className="flex items-center gap-2">
         <button 
+          onClick={handleRefreshData}
+          disabled={isRefreshing}
+          className={cn(
+            "p-2 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-colors",
+            isRefreshing && "animate-spin"
+          )}
+          title={lang === 'tr' ? 'Verileri Yenile' : 'Refresh Data'}
+          data-testid="button-refresh-data"
+        >
+          <RefreshCw className="w-4 h-4" />
+        </button>
+
+        <button 
           onClick={() => setLanguage(lang === 'en' ? 'tr' : 'en')}
           className="p-2 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-colors flex items-center gap-2 text-sm font-medium"
           title={t.language}
+          data-testid="button-language"
         >
           <Globe className="w-4 h-4" />
           <span className="uppercase">{lang}</span>
@@ -99,6 +129,7 @@ export function Header() {
           onClick={toggleTheme}
           className="p-2 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
           title={t.theme}
+          data-testid="button-theme"
         >
           {theme === 'light' ? <Moon className="w-4 h-4" /> : <Sun className="w-4 h-4" />}
         </button>
