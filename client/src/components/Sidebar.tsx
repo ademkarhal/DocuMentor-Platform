@@ -48,15 +48,46 @@ export function Sidebar({ className }: { className?: string }) {
 
           <div className="space-y-1">
             <p className="px-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">{t.categories}</p>
-            {categories?.map((cat) => (
-              <NavItem 
-                key={cat.id} 
-                href={`/categories/${cat.slug}`} 
-                icon={MonitorPlay} // In real app, parse cat.icon string to component or use dynamic icon
-                label={getLocalized(cat.title)} 
-                active={isActive(`/categories/${cat.slug}`)} 
-              />
-            ))}
+            {/* Show parent categories first, then their children indented */}
+            {categories?.filter(cat => !cat.parentId).map((parentCat) => {
+              const childCategories = categories?.filter(c => c.parentId === parentCat.id) || [];
+              const hasChildren = childCategories.length > 0;
+              
+              return (
+                <div key={parentCat.id} className="space-y-0.5">
+                  {/* Parent category - if has children show as header, otherwise as link */}
+                  {hasChildren ? (
+                    <p className="px-3 py-1.5 text-xs font-semibold text-muted-foreground">
+                      {getLocalized(parentCat.title as { en: string; tr: string })}
+                    </p>
+                  ) : (
+                    <NavItem 
+                      href={`/categories/${parentCat.slug}`} 
+                      icon={MonitorPlay}
+                      label={getLocalized(parentCat.title as { en: string; tr: string })} 
+                      active={isActive(`/categories/${parentCat.slug}`)} 
+                    />
+                  )}
+                  {/* Child categories - indented */}
+                  {childCategories.map((childCat) => (
+                    <Link 
+                      key={childCat.id}
+                      href={`/categories/${childCat.slug}`} 
+                      className={cn(
+                        "flex items-center gap-2 pl-6 pr-3 py-2 rounded-lg transition-all duration-200 group text-sm",
+                        isActive(`/categories/${childCat.slug}`)
+                          ? "bg-primary/10 text-primary shadow-sm font-medium" 
+                          : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
+                      )}
+                    >
+                      <span className="w-1.5 h-1.5 rounded-full bg-current opacity-50" />
+                      <span>{getLocalized(childCat.title as { en: string; tr: string })}</span>
+                      {isActive(`/categories/${childCat.slug}`) && <ChevronRight className="w-4 h-4 ml-auto text-primary" />}
+                    </Link>
+                  ))}
+                </div>
+              );
+            })}
           </div>
         </nav>
       </div>

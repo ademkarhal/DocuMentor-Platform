@@ -7,6 +7,7 @@ export const categories = pgTable("categories", {
   slug: text("slug").notNull().unique(),
   title: jsonb("title").notNull(), // { tr: string, en: string }
   icon: text("icon").notNull(),
+  parentId: integer("parent_id"), // For hierarchical categories
 });
 
 export const courses = pgTable("courses", {

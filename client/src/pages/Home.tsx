@@ -384,50 +384,113 @@ export default function Home() {
             {[1,2,3,4].map(i => <div key={i} className="h-32 bg-muted/50 rounded-2xl animate-pulse" />)}
           </div>
         ) : (
-          <motion.div 
-            variants={container}
-            initial="hidden"
-            animate="show"
-            className="grid grid-cols-2 md:grid-cols-4 gap-4"
-          >
-            {categories?.map((cat) => {
-              const catCourses = courses?.filter(c => c.categoryId === cat.id) || [];
-              const catCourseCount = catCourses.length;
-              const catVideoCount = catCourses.reduce((sum, c) => sum + (c.totalVideos || 0), 0);
-              const catDurationSeconds = catVideoCount * 600;
-              const catDurationH = Math.floor(catDurationSeconds / 3600);
-              const catDurationM = Math.floor((catDurationSeconds % 3600) / 60);
+          <div className="space-y-6">
+            {/* Parent categories (no parentId) */}
+            {categories?.filter(cat => !cat.parentId).map((parentCat) => {
+              const childCategories = categories?.filter(c => c.parentId === parentCat.id) || [];
+              const hasChildren = childCategories.length > 0;
               
+              // Calculate stats for parent category (include all children's courses)
+              const allCatIds = hasChildren ? [parentCat.id, ...childCategories.map(c => c.id)] : [parentCat.id];
+              const parentCatCourses = courses?.filter(c => allCatIds.includes(c.categoryId)) || [];
+              const parentCatCourseCount = parentCatCourses.length;
+              const parentCatVideoCount = parentCatCourses.reduce((sum, c) => sum + (c.totalVideos || 0), 0);
+              const parentCatDurationSeconds = parentCatVideoCount * 600;
+              const parentCatDurationH = Math.floor(parentCatDurationSeconds / 3600);
+              const parentCatDurationM = Math.floor((parentCatDurationSeconds % 3600) / 60);
+
               return (
-              <motion.div key={cat.id} variants={item}>
-                <Link 
-                  href={`/categories/${cat.slug}`}
-                  className="group block p-6 bg-card hover:bg-muted/30 border border-border/50 hover:border-primary/50 rounded-2xl transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:shadow-primary/5"
-                  data-testid={`link-category-${cat.id}`}
+                <motion.div 
+                  key={parentCat.id}
+                  variants={container}
+                  initial="hidden"
+                  animate="show"
+                  className="space-y-3"
                 >
-                  <div className="w-12 h-12 rounded-xl bg-primary/10 text-primary flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300">
-                    <Layers className="w-6 h-6" />
+                  {/* Parent category header */}
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
+                      <Layers className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h3 className="font-bold text-lg">{getLocalized(parentCat.title as { en: string; tr: string })}</h3>
+                      <div className="flex flex-wrap gap-x-3 gap-y-0 text-xs text-muted-foreground">
+                        <span>{parentCatCourseCount} {lang === 'tr' ? 'kurs' : 'courses'}</span>
+                        <span>{parentCatVideoCount} {lang === 'tr' ? 'video' : 'videos'}</span>
+                        <span>{formatDuration(parentCatDurationH, parentCatDurationM)}</span>
+                      </div>
+                    </div>
                   </div>
-                  <h3 className="font-semibold text-lg mb-2">{getLocalized(cat.title as { en: string; tr: string })}</h3>
-                  <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground">
-                    <span className="flex items-center gap-1">
-                      <Book className="w-3 h-3" />
-                      {catCourseCount} {lang === 'tr' ? 'kurs' : 'courses'}
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <Video className="w-3 h-3" />
-                      {catVideoCount} {lang === 'tr' ? 'video' : 'videos'}
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <Clock className="w-3 h-3" />
-                      {formatDuration(catDurationH, catDurationM)}
-                    </span>
-                  </div>
-                </Link>
-              </motion.div>
+
+                  {/* If has children, show them in grid */}
+                  {hasChildren ? (
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pl-4 border-l-2 border-primary/20 ml-5">
+                      {childCategories.map((childCat) => {
+                        const catCourses = courses?.filter(c => c.categoryId === childCat.id) || [];
+                        const catCourseCount = catCourses.length;
+                        const catVideoCount = catCourses.reduce((sum, c) => sum + (c.totalVideos || 0), 0);
+                        const catDurationSeconds = catVideoCount * 600;
+                        const catDurationH = Math.floor(catDurationSeconds / 3600);
+                        const catDurationM = Math.floor((catDurationSeconds % 3600) / 60);
+                        
+                        return (
+                          <motion.div key={childCat.id} variants={item}>
+                            <Link 
+                              href={`/categories/${childCat.slug}`}
+                              className="group block p-5 bg-card hover:bg-muted/30 border border-border/50 hover:border-primary/50 rounded-2xl transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:shadow-primary/5"
+                              data-testid={`link-category-${childCat.id}`}
+                            >
+                              <h4 className="font-semibold text-base mb-2">{getLocalized(childCat.title as { en: string; tr: string })}</h4>
+                              <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground">
+                                <span className="flex items-center gap-1">
+                                  <Book className="w-3 h-3" />
+                                  {catCourseCount} {lang === 'tr' ? 'kurs' : 'courses'}
+                                </span>
+                                <span className="flex items-center gap-1">
+                                  <Video className="w-3 h-3" />
+                                  {catVideoCount}
+                                </span>
+                                <span className="flex items-center gap-1">
+                                  <Clock className="w-3 h-3" />
+                                  {formatDuration(catDurationH, catDurationM)}
+                                </span>
+                              </div>
+                            </Link>
+                          </motion.div>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    /* If no children, show as single clickable card */
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                      <motion.div variants={item}>
+                        <Link 
+                          href={`/categories/${parentCat.slug}`}
+                          className="group block p-5 bg-card hover:bg-muted/30 border border-border/50 hover:border-primary/50 rounded-2xl transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:shadow-primary/5"
+                          data-testid={`link-category-${parentCat.id}`}
+                        >
+                          <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground">
+                            <span className="flex items-center gap-1">
+                              <Book className="w-3 h-3" />
+                              {parentCatCourseCount} {lang === 'tr' ? 'kurs' : 'courses'}
+                            </span>
+                            <span className="flex items-center gap-1">
+                              <Video className="w-3 h-3" />
+                              {parentCatVideoCount}
+                            </span>
+                            <span className="flex items-center gap-1">
+                              <Clock className="w-3 h-3" />
+                              {formatDuration(parentCatDurationH, parentCatDurationM)}
+                            </span>
+                          </div>
+                        </Link>
+                      </motion.div>
+                    </div>
+                  )}
+                </motion.div>
               );
             })}
-          </motion.div>
+          </div>
         )}
       </div>
 
@@ -460,6 +523,13 @@ export default function Home() {
               const hasStarted = courseWatchedSeconds > 0;
               const percent = course.totalVideos ? Math.round((courseCompletedCount / course.totalVideos) * 100) : 0;
               
+              // Find category for this course
+              const courseCategory = categories?.find(c => c.id === course.categoryId);
+              const parentCategory = courseCategory?.parentId ? categories?.find(c => c.id === courseCategory.parentId) : null;
+              const categoryLabel = parentCategory 
+                ? `${getLocalized(parentCategory.title as { en: string; tr: string })} / ${getLocalized(courseCategory?.title as { en: string; tr: string })}`
+                : getLocalized(courseCategory?.title as { en: string; tr: string });
+              
               return (
                 <motion.div key={course.id} variants={item}>
                   <Link 
@@ -474,6 +544,12 @@ export default function Home() {
                         alt="Course thumbnail" 
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                       />
+                      {/* Category badge */}
+                      <div className="absolute top-3 left-3 z-20">
+                        <span className="px-2 py-1 rounded-md bg-black/60 text-white text-xs font-medium backdrop-blur-sm">
+                          {categoryLabel}
+                        </span>
+                      </div>
                       {/* Stats overlay */}
                       <div className="absolute bottom-3 left-3 right-3 z-20 flex items-center justify-between text-white/90 text-xs font-medium">
                         <div className="flex items-center gap-1">

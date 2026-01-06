@@ -12,6 +12,7 @@ export interface Category {
   slug: string;
   title: BilingualText;
   icon: string;
+  parentId?: number | null;
 }
 
 export interface Course {
@@ -154,12 +155,52 @@ class MemoryStorage {
     this.courses = [];
     this.videos = [];
 
+    // Hierarchical categories
+    // Main category: Yazılım Geliştirme
     this.categories.push({
       id: 1,
       slug: "software-development",
       title: { tr: "Yazılım Geliştirme", en: "Software Development" },
-      icon: "code"
+      icon: "code",
+      parentId: null
     });
+
+    // Main category: Takip 7/24 (parent group)
+    this.categories.push({
+      id: 2,
+      slug: "takip-724",
+      title: { tr: "Takip 7/24", en: "Takip 7/24" },
+      icon: "monitor",
+      parentId: null
+    });
+
+    // Sub-categories under Takip 7/24
+    this.categories.push({
+      id: 3,
+      slug: "musteri-paneli",
+      title: { tr: "Müşteri Paneli", en: "Customer Panel" },
+      icon: "users",
+      parentId: 2
+    });
+
+    this.categories.push({
+      id: 4,
+      slug: "genel-yonetim-paneli",
+      title: { tr: "Genel Yönetim Paneli", en: "General Management Panel" },
+      icon: "settings",
+      parentId: 2
+    });
+
+    this.categories.push({
+      id: 5,
+      slug: "mobil-uygulama",
+      title: { tr: "Mobil Uygulama", en: "Mobile Application" },
+      icon: "smartphone",
+      parentId: 2
+    });
+
+    // Category assignments for courses (distribute across categories)
+    const categoryAssignments = [1, 3, 4, 5]; // C# -> Software Dev, ASP.NET -> Customer Panel, React -> Management Panel, NextJS -> Mobile App
 
     let videoIdCounter = 1;
 
@@ -167,6 +208,7 @@ class MemoryStorage {
     for (let i = 0; i < PLAYLISTS.length; i++) {
       const playlist = PLAYLISTS[i];
       const courseId = i + 1;
+      const categoryId = categoryAssignments[i] || 1;
       
       console.log(`Fetching playlist: ${playlist.slug} (${playlist.id})`);
       
@@ -176,7 +218,7 @@ class MemoryStorage {
       if (playlistVideos.length > 0) {
         this.courses.push({
           id: courseId,
-          categoryId: 1,
+          categoryId: categoryId,
           slug: playlist.slug,
           title: {
             tr: playlistInfo?.title || playlist.defaultTitle.tr,

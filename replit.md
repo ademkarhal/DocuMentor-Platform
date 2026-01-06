@@ -37,14 +37,23 @@ Preferred communication style: Simple, everyday language.
 - **Build:** esbuild for production bundling
 
 ### Data Storage
-- **Database:** PostgreSQL (via DATABASE_URL environment variable)
-- **Schema Location:** `shared/schema.ts`
-- **Migrations:** Drizzle Kit (`drizzle-kit push`)
-- **Tables:**
-  - `categories` - Course categories with bilingual titles
+- **Storage:** In-memory storage with file caching (`/tmp/youtube_cache.json`, 24h expiry)
+- **Schema Location:** `shared/schema.ts` (types only, no actual database)
+- **Tables (in-memory):**
+  - `categories` - Course categories with bilingual titles and hierarchical parentId
   - `courses` - Courses linked to categories
-  - `videos` - YouTube videos with metadata and transcripts
+  - `videos` - YouTube videos with metadata
   - `documents` - Downloadable course materials
+
+### Category Hierarchy
+Categories support parent-child relationships via `parentId` field:
+- **Yazılım Geliştirme** (standalone category, contains C# course)
+- **Takip 7/24** (parent category)
+  - **Müşteri Paneli** (contains ASP.NET Core course)
+  - **Genel Yönetim Paneli** (contains React course)
+  - **Mobil Uygulama** (contains NextJS course)
+
+Course cards display category badges showing full hierarchy path (e.g., "Takip 7/24 / Müşteri Paneli").
 
 ### Shared Code Pattern
 The `shared/` directory contains code used by both frontend and backend:

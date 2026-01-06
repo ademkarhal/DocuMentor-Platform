@@ -1,4 +1,4 @@
-import { useCourses } from "@/hooks/use-api";
+import { useCourses, useCategories } from "@/hooks/use-api";
 import { useTranslation, useStore } from "@/hooks/use-store";
 import { Link } from "wouter";
 import { PlayCircle, ArrowRight, Clock, Timer, CheckCircle } from "lucide-react";
@@ -7,6 +7,7 @@ import { motion } from "framer-motion";
 export default function Courses() {
   const { t, getLocalized, lang } = useTranslation();
   const { data: courses, isLoading } = useCourses();
+  const { data: categories } = useCategories();
   const { videoProgress, completedVideos } = useStore();
 
   const container = {
@@ -67,6 +68,13 @@ export default function Courses() {
             const progress = getCourseProgress(course.id, course.totalVideos || 0);
             const hasStarted = progress.watchedSeconds > 0;
             
+            // Find category for this course
+            const courseCategory = categories?.find(c => c.id === course.categoryId);
+            const parentCategory = courseCategory?.parentId ? categories?.find(c => c.id === courseCategory.parentId) : null;
+            const categoryLabel = parentCategory 
+              ? `${getLocalized(parentCategory.title as { en: string; tr: string })} / ${getLocalized(courseCategory?.title as { en: string; tr: string })}`
+              : getLocalized(courseCategory?.title as { en: string; tr: string });
+            
             return (
               <motion.div key={course.id} variants={item}>
                 <Link 
@@ -81,6 +89,12 @@ export default function Courses() {
                       alt={getLocalized(course.title as { en: string; tr: string })} 
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                     />
+                    {/* Category badge */}
+                    <div className="absolute top-3 left-3 z-20">
+                      <span className="px-2 py-1 rounded-md bg-black/60 text-white text-xs font-medium backdrop-blur-sm">
+                        {categoryLabel}
+                      </span>
+                    </div>
                     <div className="absolute bottom-3 left-3 right-3 z-20 flex items-center justify-between text-white/90 text-xs font-medium">
                       <div className="flex items-center gap-1">
                         <PlayCircle className="w-3.5 h-3.5" />
