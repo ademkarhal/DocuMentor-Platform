@@ -1,22 +1,33 @@
 import { useCategories, useCourses } from "@/hooks/use-api";
 import { useTranslation, useStore } from "@/hooks/use-store";
 import { Link } from "wouter";
-import { ArrowRight, PlayCircle, Book, Layers, Trophy, Target, CheckCircle, BarChart3 } from "lucide-react";
+import { ArrowRight, PlayCircle, Book, Layers, Trophy, Target, CheckCircle, BarChart3, Clock, TrendingUp, Play } from "lucide-react";
 import { motion } from "framer-motion";
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
+import { Button } from "@/components/ui/button";
 
 export default function Home() {
   const { t, getLocalized, lang } = useTranslation();
   const { data: categories, isLoading: catLoading } = useCategories();
   const { data: courses, isLoading: coursesLoading } = useCourses();
-  const { getStats } = useStore();
+  const { getStats, videoProgress } = useStore();
   
   const stats = getStats();
   const featuredCourses = courses?.slice(0, 3);
   
   const totalVideos = courses?.reduce((sum, c) => sum + (c.totalVideos || 0), 0) || 0;
   const successRate = totalVideos > 0 ? Math.round((stats.completedCount / totalVideos) * 100) : 0;
+  
+  const totalWatchedSeconds = Object.values(videoProgress).reduce((sum, v) => sum + (v || 0), 0);
+  const watchedHours = Math.floor(totalWatchedSeconds / 3600);
+  const watchedMinutes = Math.floor((totalWatchedSeconds % 3600) / 60);
+  
+  const lastWatchedKey = Object.entries(videoProgress)
+    .filter(([_, v]) => v > 0)
+    .sort((a, b) => b[1] - a[1])[0]?.[0];
+  
+  const lastWatchedCourseSlug = lastWatchedKey ? courses?.find(c => lastWatchedKey.startsWith(`${c.id}-`))?.slug : null;
 
   const container = {
     hidden: { opacity: 0 },
@@ -34,31 +45,45 @@ export default function Home() {
   const dashboardCards = [
     {
       icon: Book,
-      label: t.totalCourses,
+      label: lang === 'tr' ? "Toplam Kurs" : "Total Courses",
       value: courses?.length || 0,
       color: "text-blue-500",
       bgColor: "bg-blue-500/10",
     },
     {
       icon: PlayCircle,
-      label: t.totalVideosCount,
+      label: lang === 'tr' ? "Toplam Video" : "Total Videos",
       value: totalVideos,
       color: "text-purple-500",
       bgColor: "bg-purple-500/10",
     },
     {
       icon: Target,
-      label: t.watchedVideos,
+      label: lang === 'tr' ? "Başlanan" : "Started",
       value: stats.watchedCount,
       color: "text-orange-500",
       bgColor: "bg-orange-500/10",
     },
     {
       icon: CheckCircle,
-      label: t.completedVideos,
+      label: lang === 'tr' ? "Tamamlanan" : "Completed",
       value: stats.completedCount,
       color: "text-green-500",
       bgColor: "bg-green-500/10",
+    },
+    {
+      icon: Layers,
+      label: lang === 'tr' ? "Aktif Kurs" : "Active Courses",
+      value: stats.startedCourses.length,
+      color: "text-cyan-500",
+      bgColor: "bg-cyan-500/10",
+    },
+    {
+      icon: Clock,
+      label: lang === 'tr' ? "İzleme Süresi" : "Watch Time",
+      value: watchedHours > 0 ? `${watchedHours}s ${watchedMinutes}dk` : `${watchedMinutes}dk`,
+      color: "text-pink-500",
+      bgColor: "bg-pink-500/10",
     },
   ];
 
@@ -70,25 +95,31 @@ export default function Home() {
         animate={{ opacity: 1, y: 0 }}
         className="space-y-4"
       >
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between gap-4 flex-wrap">
           <h2 className="text-2xl font-bold text-foreground flex items-center gap-2">
             <BarChart3 className="w-6 h-6 text-primary" />
-            {t.yourProgress}
+            {lang === 'tr' ? "İlerleme Durumunuz" : "Your Progress"}
           </h2>
+          {lastWatchedCourseSlug && (
+            <Link href={`/courses/${lastWatchedCourseSlug}`}>
+              <Button variant="outline" size="sm" className="gap-2" data-testid="button-continue-watching">
+                <Play className="w-4 h-4" />
+                {lang === 'tr' ? "Kaldığım Yerden Devam Et" : "Continue Watching"}
+              </Button>
+            </Link>
+          )}
         </div>
         
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
           {dashboardCards.map((card, idx) => (
             <Card key={idx} className="border-border/50">
               <CardContent className="p-4">
-                <div className="flex items-center gap-3">
-                  <div className={`w-10 h-10 rounded-xl ${card.bgColor} ${card.color} flex items-center justify-center`}>
-                    <card.icon className="w-5 h-5" />
+                <div className="flex flex-col items-center text-center gap-2">
+                  <div className={`w-12 h-12 rounded-xl ${card.bgColor} ${card.color} flex items-center justify-center`}>
+                    <card.icon className="w-6 h-6" />
                   </div>
-                  <div>
-                    <p className="text-2xl font-bold" data-testid={`stat-value-${idx}`}>{card.value}</p>
-                    <p className="text-xs text-muted-foreground">{card.label}</p>
-                  </div>
+                  <p className="text-2xl font-bold" data-testid={`stat-value-${idx}`}>{card.value}</p>
+                  <p className="text-xs text-muted-foreground">{card.label}</p>
                 </div>
               </CardContent>
             </Card>
@@ -98,30 +129,44 @@ export default function Home() {
         {/* Success Rate Bar */}
         <Card className="border-border/50">
           <CardContent className="p-4">
-            <div className="flex items-center justify-between mb-2">
-              <div className="flex items-center gap-2">
-                <Trophy className="w-5 h-5 text-yellow-500" />
-                <span className="font-medium">{t.successRate}</span>
+            <div className="flex items-center justify-between gap-4 flex-wrap mb-3">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-yellow-500/10 flex items-center justify-center">
+                  <Trophy className="w-5 h-5 text-yellow-500" />
+                </div>
+                <div>
+                  <span className="font-semibold">{lang === 'tr' ? "Başarı Oranı" : "Success Rate"}</span>
+                  <p className="text-xs text-muted-foreground">
+                    {stats.completedCount} / {totalVideos} {lang === 'tr' ? "video tamamlandı" : "videos completed"}
+                  </p>
+                </div>
               </div>
-              <span className="text-2xl font-bold text-primary" data-testid="stat-success-rate">{successRate}%</span>
+              <div className="flex items-center gap-2">
+                <TrendingUp className="w-5 h-5 text-green-500" />
+                <span className="text-3xl font-bold text-primary" data-testid="stat-success-rate">{successRate}%</span>
+              </div>
             </div>
-            <Progress value={successRate} className="h-2" />
-            <p className="text-xs text-muted-foreground mt-2">
-              {stats.completedCount} / {totalVideos} {t.videos.toLowerCase()}
-            </p>
+            <Progress value={successRate} className="h-3" />
           </CardContent>
         </Card>
 
-        {/* Courses Started */}
-        {stats.startedCourses.length > 0 && (
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Layers className="w-4 h-4" />
-            <span>{t.coursesStarted}: {stats.startedCourses.length}</span>
-          </div>
-        )}
-
         {stats.watchedCount === 0 && (
-          <p className="text-center text-muted-foreground py-4">{t.startLearning}</p>
+          <Card className="border-dashed border-2 border-primary/30 bg-primary/5">
+            <CardContent className="p-6 text-center">
+              <PlayCircle className="w-12 h-12 text-primary/50 mx-auto mb-3" />
+              <p className="text-muted-foreground">
+                {lang === 'tr' 
+                  ? "Henüz video izlemeye başlamadınız. Bir kursa göz atarak öğrenmeye başlayın!" 
+                  : "You haven't started watching any videos yet. Browse a course to start learning!"}
+              </p>
+              <Link href="/courses">
+                <Button className="mt-4 gap-2" data-testid="button-start-learning">
+                  {lang === 'tr' ? "Kurslara Göz At" : "Browse Courses"}
+                  <ArrowRight className="w-4 h-4" />
+                </Button>
+              </Link>
+            </CardContent>
+          </Card>
         )}
       </motion.div>
 
