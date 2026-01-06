@@ -263,17 +263,34 @@ export function useSearch(query: string) {
         });
       }
       
-      // If we have cached results or cached courses, return them
-      if (results.length > 0 || cachedCourses) {
-        return results;
+      // If we have cached results with videos found, return them
+      if (results.length > 0) {
+        // Check if we found any videos in cache
+        const hasVideosInResults = results.some(r => r.type === 'video');
+        if (hasVideosInResults) {
+          return results;
+        }
       }
       
-      // Fall back to API if no cache
+      // Fall back to API to search videos (videos may not be cached until course is visited)
       const url = `${api.search.query.path}?q=${encodeURIComponent(query)}`;
       const res = await fetch(url);
       if (!res.ok) throw new Error("Search failed");
       const apiResults = api.search.query.responses[200].parse(await res.json()) as SearchResponse;
-      return apiResults.map(r => ({ ...r, courseId: undefined, courseName: undefined, courseSlug: undefined }));
+      
+      // Merge API results with cached results, avoiding duplicates
+      const apiExtended = apiResults.map(r => ({ ...r, courseId: undefined, courseName: undefined, courseSlug: undefined }));
+      
+      // Combine: cached course results + API video results
+      const existingIds = new Set(results.map(r => `${r.type}-${r.id}`));
+      const mergedResults = [...results];
+      apiExtended.forEach(r => {
+        if (!existingIds.has(`${r.type}-${r.id}`)) {
+          mergedResults.push(r);
+        }
+      });
+      
+      return mergedResults;
     },
     enabled: query.length >= 2,
     staleTime: 0, 

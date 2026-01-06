@@ -167,14 +167,6 @@ class MemoryStorage {
     // Sub-categories under Takip 7/24
     this.categories.push({
       id: 2,
-      slug: "yazilim-gelistirme",
-      title: { tr: "Yazılım Geliştirme", en: "Software Development" },
-      icon: "code",
-      parentId: 1
-    });
-
-    this.categories.push({
-      id: 3,
       slug: "musteri-paneli",
       title: { tr: "Müşteri Paneli", en: "Customer Panel" },
       icon: "users",
@@ -182,7 +174,7 @@ class MemoryStorage {
     });
 
     this.categories.push({
-      id: 4,
+      id: 3,
       slug: "genel-yonetim-paneli",
       title: { tr: "Genel Yönetim Paneli", en: "General Management Panel" },
       icon: "settings",
@@ -190,15 +182,15 @@ class MemoryStorage {
     });
 
     this.categories.push({
-      id: 5,
+      id: 4,
       slug: "mobil-uygulama",
       title: { tr: "Mobil Uygulama", en: "Mobile Application" },
       icon: "smartphone",
       parentId: 1
     });
 
-    // Category assignments for courses
-    const categoryAssignments = [2, 3, 4, 5]; // C# -> Yazılım Geliştirme, ASP.NET -> Müşteri Paneli, React -> Genel Yönetim, NextJS -> Mobil
+    // Category assignments for courses (4 courses to 3 categories - C# goes to Müşteri Paneli)
+    const categoryAssignments = [2, 2, 3, 4]; // C# -> Müşteri Paneli, ASP.NET -> Müşteri Paneli, React -> Genel Yönetim, NextJS -> Mobil
 
     let videoIdCounter = 1;
 

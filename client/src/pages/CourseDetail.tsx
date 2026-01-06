@@ -486,6 +486,16 @@ export default function CourseDetail() {
             const isActive = activeVideo?.id === video.id;
             const isCompleted = isVideoCompleted(video.id);
             const progress = getProgress(video.id);
+            
+            // Calculate watched and remaining time for this video
+            const videoWatchedSeconds = videoProgress[`${course?.id}-${video.id}`] || 0;
+            const videoRemainingSeconds = Math.max(0, video.duration - videoWatchedSeconds);
+            
+            const formatVideoTime = (sec: number) => {
+              const m = Math.floor(sec / 60);
+              const s = sec % 60;
+              return `${m}:${s.toString().padStart(2, '0')}`;
+            };
 
             return (
               <button
@@ -538,11 +548,25 @@ export default function CourseDetail() {
                     />
                   </div>
                   <div className={cn(
-                    "flex items-center gap-2 text-xs",
+                    "flex items-center gap-x-3 gap-y-0.5 flex-wrap text-[10px]",
                     isActive ? "text-primary-foreground/80" : "text-muted-foreground"
                   )}>
-                    <Clock className="w-3 h-3" />
-                    <span>{Math.floor(video.duration / 60)}:{(video.duration % 60).toString().padStart(2, '0')}</span>
+                    <span className="flex items-center gap-1">
+                      <Clock className="w-3 h-3" />
+                      {formatVideoTime(video.duration)}
+                    </span>
+                    {videoWatchedSeconds > 0 && (
+                      <>
+                        <span className="flex items-center gap-1 text-green-500">
+                          <Timer className="w-3 h-3" />
+                          {formatVideoTime(videoWatchedSeconds)}
+                        </span>
+                        <span className="flex items-center gap-1 text-orange-500">
+                          <Hourglass className="w-3 h-3" />
+                          {formatVideoTime(videoRemainingSeconds)}
+                        </span>
+                      </>
+                    )}
                   </div>
                 </div>
               </button>
