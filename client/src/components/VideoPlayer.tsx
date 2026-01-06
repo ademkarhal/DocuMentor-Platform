@@ -1,4 +1,5 @@
-import { useEffect, useRef, useCallback } from "react";
+import { useEffect, useRef, useCallback, useState } from "react";
+import { Play, RotateCcw } from "lucide-react";
 
 interface VideoSource {
   id: number;
@@ -100,6 +101,7 @@ export default function VideoPlayer({
   const containerIdRef = useRef<string>(`yt-player-${Math.random().toString(36).substr(2, 9)}`);
   const lastVideoIdRef = useRef<number | null>(null);
   const initialPositionRef = useRef<number>(initialPosition);
+  const [showEndOverlay, setShowEndOverlay] = useState(false);
 
   const activeSource = sources[activeIndex];
   
@@ -180,6 +182,7 @@ export default function VideoPlayer({
     if (isNewVideo) {
       hasCompletedRef.current = false;
       wasAlreadyCompletedRef.current = isCurrentVideoCompleted;
+      setShowEndOverlay(false);
     }
 
     const initPlayer = async () => {
@@ -202,6 +205,9 @@ export default function VideoPlayer({
           iv_load_policy: 3,
           start: Math.floor(initialPositionRef.current),
           origin: window.location.origin,
+          showinfo: 0,
+          fs: 1,
+          playsinline: 1,
         },
         events: {
           onReady: () => {
@@ -210,7 +216,9 @@ export default function VideoPlayer({
           onStateChange: (event) => {
             if (event.data === 1) {
               startProgressTracking();
+              setShowEndOverlay(false);
             } else if (event.data === 0) {
+              setShowEndOverlay(true);
               // Video ended - mark complete and maybe auto advance
               clearProgressInterval();
               
@@ -271,6 +279,22 @@ export default function VideoPlayer({
     );
   }
 
+  const handleReplay = () => {
+    if (playerRef.current && typeof playerRef.current.seekTo === 'function') {
+      playerRef.current.seekTo(0, true);
+      setShowEndOverlay(false);
+    }
+  };
+
+  const handleNextVideo = () => {
+    const nextIndex = activeIndex + 1;
+    if (nextIndex < sources.length && onVideoChange) {
+      onVideoChange(nextIndex);
+    }
+  };
+
+  const hasNextVideo = activeIndex + 1 < sources.length;
+
   return (
     <div className={`yt-wrapper ${className}`}>
       <div 
@@ -278,6 +302,32 @@ export default function VideoPlayer({
         className="w-full h-full"
         data-testid="video-player"
       />
+      {/* End overlay to hide YouTube recommendations */}
+      {showEndOverlay && (
+        <div className="absolute inset-0 z-30 bg-gradient-to-t from-black/90 via-black/70 to-black/50 flex flex-col items-center justify-center gap-4">
+          <p className="text-white text-lg font-medium mb-2">Video tamamlandı</p>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={handleReplay}
+              className="flex items-center gap-2 px-4 py-2 bg-white/20 hover:bg-white/30 text-white rounded-lg transition-colors"
+              data-testid="button-replay"
+            >
+              <RotateCcw className="w-4 h-4" />
+              <span>Tekrar İzle</span>
+            </button>
+            {hasNextVideo && (
+              <button
+                onClick={handleNextVideo}
+                className="flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary/90 text-white rounded-lg transition-colors"
+                data-testid="button-next-video"
+              >
+                <Play className="w-4 h-4" />
+                <span>Sonraki Video</span>
+              </button>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
