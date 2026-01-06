@@ -1,8 +1,7 @@
 import { useCourse, useCourseVideos, useCourseDocuments } from "@/hooks/use-api";
 import { useTranslation, useStore } from "@/hooks/use-store";
 import { useRoute } from "wouter";
-import { useState, useEffect, useRef } from "react";
-import ReactPlayer from "react-player";
+import { useState, useEffect } from "react";
 import { CheckCircle2, FileText, Download, Play, Clock } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -13,7 +12,6 @@ export default function CourseDetail() {
   const slug = params?.slug || "";
   
   const { t, getLocalized } = useTranslation();
-  const playerRef = useRef<ReactPlayer>(null);
   
   const { data: course, isLoading: courseLoading } = useCourse(slug);
   const { data: videos, isLoading: videosLoading } = useCourseVideos(course?.id);
@@ -25,7 +23,6 @@ export default function CourseDetail() {
   });
 
   const [activeVideoId, setActiveVideoId] = useState<number | null>(null);
-  const [isReady, setIsReady] = useState(false);
 
   useEffect(() => {
     if (videos && videos.length > 0 && !activeVideoId) {
@@ -53,26 +50,6 @@ export default function CourseDetail() {
   const activeVideo = videos?.find(v => v.id === activeVideoId);
   const currentProgress = progressData?.find((p: any) => p.videoId === activeVideoId);
 
-  const handleProgress = (state: { playedSeconds: number }) => {
-    if (!activeVideo || !course) return;
-    
-    const isNowCompleted = state.playedSeconds / activeVideo.duration > 0.9;
-    const lastSavedPosition = currentProgress?.lastPosition || 0;
-    const positionDiff = Math.abs(state.playedSeconds - lastSavedPosition);
-    const completionChanged = isNowCompleted && !currentProgress?.isCompleted;
-
-    if (positionDiff > 5 || completionChanged) {
-      apiRequest("POST", "/api/progress", {
-        courseId: course.id,
-        videoId: activeVideo.id,
-        lastPosition: Math.floor(state.playedSeconds),
-        isCompleted: isNowCompleted || currentProgress?.isCompleted || false
-      }).then(() => {
-        queryClient.invalidateQueries({ queryKey: [`/api/courses/${course.id}/progress`] });
-      });
-    }
-  };
-
   const getProgress = (vId: number) => {
     const p = progressData?.find((p: any) => p.videoId === vId);
     if (p?.isCompleted) return 100;
@@ -87,7 +64,6 @@ export default function CourseDetail() {
 
   const handleVideoSelect = (vId: number) => {
     setActiveVideoId(vId);
-    setIsReady(false);
   };
 
   return (
@@ -95,30 +71,16 @@ export default function CourseDetail() {
       <div className="flex-1 flex flex-col min-h-0 overflow-y-auto pr-2">
         <div className="aspect-video bg-black rounded-2xl overflow-hidden shadow-2xl shadow-black/20 mb-6 shrink-0 relative">
           {activeVideo && (
-            <ReactPlayer
+            <iframe
               key={activeVideo.id}
-              ref={playerRef}
-              url={`https://www.youtube.com/watch?v=${activeVideo.youtubeId}`}
+              src={`https://www.youtube.com/embed/${activeVideo.youtubeId}?autoplay=1&rel=0&modestbranding=1`}
               width="100%"
               height="100%"
-              controls
-              onProgress={handleProgress}
-              onReady={() => {
-                if (currentProgress?.lastPosition && !isReady) {
-                  playerRef.current?.seekTo(currentProgress.lastPosition);
-                  setIsReady(true);
-                }
-              }}
-              onStart={() => setIsReady(true)}
-              config={{
-                youtube: {
-                  playerVars: { 
-                    autoplay: 1,
-                    modestbranding: 1,
-                    rel: 0
-                  }
-                }
-              }}
+              className="w-full h-full"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+              allowFullScreen
+              title={getLocalized(activeVideo.title as any)}
+              data-testid="video-player"
             />
           )}
           {!activeVideo && !videosLoading && (
