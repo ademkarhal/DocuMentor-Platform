@@ -79,52 +79,14 @@ async function seedDatabase() {
     icon: "pen-tool"
   });
 
-  // Course 1: React Mastery
+  // Course 1: Advanced Node.js (Full Stack)
   const course1 = await storage.createCourse({
-    categoryId: cat1.id,
-    slug: "react-mastery",
-    title: { tr: "React Uzmanlık Eğitimi", en: "React Mastery" },
-    description: { tr: "Modern web uygulamaları geliştirin", en: "Build modern web apps" },
-    thumbnail: "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a7/React-icon.svg/1200px-React-icon.svg.png",
-    totalVideos: 3,
-    nextcloudShareUrl: "https://nextcloud.example.com/s/react-files"
-  });
-
-  await storage.createVideo({
-    courseId: course1.id,
-    title: { tr: "React'e Giriş", en: "Introduction to React" },
-    description: { tr: "Temel kavramlar", en: "Basic concepts" },
-    youtubeId: "dGcsHMXbSOA", // Example ID
-    duration: 600,
-    sequenceOrder: 1,
-    transcript: "React is a JavaScript library for building user interfaces..."
-  });
-
-  await storage.createVideo({
-    courseId: course1.id,
-    title: { tr: "Component Yapısı", en: "Component Structure" },
-    description: { tr: "Componentler nasıl çalışır", en: "How components work" },
-    youtubeId: "Digf43aZL_I", 
-    duration: 800,
-    sequenceOrder: 2,
-    transcript: "Components are the building blocks of React applications..."
-  });
-
-  await storage.createDocument({
-    courseId: course1.id,
-    title: { tr: "Ders Notları - PDF", en: "Lecture Notes - PDF" },
-    fileUrl: "#",
-    fileType: "pdf"
-  });
-
-  // Course 2: Advanced Node.js
-  const course2 = await storage.createCourse({
     categoryId: cat1.id,
     slug: "modern-web-development",
     title: { tr: "Modern Web Geliştirme (Full Stack)", en: "Modern Web Development (Full Stack)" },
     description: { tr: "Sıfırdan ileri seviye web geliştirme", en: "Full stack web development from scratch" },
     thumbnail: "https://images.unsplash.com/photo-1587620962725-abab7fe55159?w=800&q=80",
-    totalVideos: 5,
+    totalVideos: 10,
     nextcloudShareUrl: "https://nextcloud.example.com/s/webdev-files"
   });
 
@@ -133,12 +95,17 @@ async function seedDatabase() {
     { youtubeId: "8u8W4U9y6QA", title: { tr: "HTML & CSS Temelleri", en: "HTML & CSS Basics" }, duration: 1500 },
     { youtubeId: "f02pL7n-5tU", title: { tr: "JavaScript'e Giriş", en: "Introduction to JavaScript" }, duration: 1800 },
     { youtubeId: "vLnH9M-nIqc", title: { tr: "React Temelleri", en: "React Fundamentals" }, duration: 2000 },
-    { youtubeId: "mH_iHwL3X6M", title: { tr: "Node.js Giriş", en: "Introduction to Node.js" }, duration: 1600 }
+    { youtubeId: "mH_iHwL3X6M", title: { tr: "Node.js Giriş", en: "Introduction to Node.js" }, duration: 1600 },
+    { youtubeId: "L72fhGm1L-A", title: { tr: "Express.js ile API Geliştirme", en: "API Development with Express.js" }, duration: 1900 },
+    { youtubeId: "SccSCuHhbc0", title: { tr: "MongoDB & Mongoose", en: "MongoDB & Mongoose" }, duration: 2100 },
+    { youtubeId: "W6NZfCO5SIk", title: { tr: "JWT Kimlik Doğrulama", en: "JWT Authentication" }, duration: 2200 },
+    { youtubeId: "fBNz5xF-Kx4", title: { tr: "Frontend & Backend Entegrasyonu", en: "Frontend & Backend Integration" }, duration: 2400 },
+    { youtubeId: "9o9B_uM3-W8", title: { tr: "Uygulamayı Yayına Alma", en: "Deploying the Application" }, duration: 1500 }
   ];
 
   for (let i = 0; i < webDevVideos.length; i++) {
     await storage.createVideo({
-      courseId: course2.id,
+      courseId: course1.id,
       title: webDevVideos[i].title,
       description: { tr: "Detaylı eğitim içeriği", en: "Detailed tutorial content" },
       youtubeId: webDevVideos[i].youtubeId,
@@ -147,14 +114,14 @@ async function seedDatabase() {
     });
   }
 
-  // Course 3: Python for Beginners
-  const course3 = await storage.createCourse({
+  // Course 2: Mobile App Development (Flutter)
+  const course2 = await storage.createCourse({
     categoryId: cat1.id,
     slug: "mobile-app-development",
     title: { tr: "Mobil Uygulama Geliştirme (Flutter)", en: "Mobile App Development (Flutter)" },
     description: { tr: "Sıfırdan Flutter ile mobil uygulamalar", en: "Mobile apps with Flutter from scratch" },
     thumbnail: "https://images.unsplash.com/photo-1512941937669-90a1b58e7e9c?w=800&q=80",
-    totalVideos: 5,
+    totalVideos: 10,
     nextcloudShareUrl: "https://nextcloud.example.com/s/flutter-files"
   });
 
@@ -163,12 +130,17 @@ async function seedDatabase() {
     { youtubeId: "x0uinJ5DX3c", title: { tr: "Dart Programlama Dili", en: "Dart Programming Language" }, duration: 1400 },
     { youtubeId: "GLSG_Wh_YWc", title: { tr: "Widget Yapısı", en: "Widget Structure" }, duration: 1300 },
     { youtubeId: "jx_yLqP3Xm8", title: { tr: "State Management", en: "State Management" }, duration: 1700 },
-    { youtubeId: "ZpP9o4-u2E4", title: { tr: "API Entegrasyonu", en: "API Integration" }, duration: 1900 }
+    { youtubeId: "ZpP9o4-u2E4", title: { tr: "API Entegrasyonu", en: "API Integration" }, duration: 1900 },
+    { youtubeId: "rD7Mh9Z-u9o", title: { tr: "Firebase Kurulumu", en: "Firebase Setup" }, duration: 1600 },
+    { youtubeId: "2_m_vD-L6l0", title: { tr: "Cloud Firestore Kullanımı", en: "Using Cloud Firestore" }, duration: 1800 },
+    { youtubeId: "8D_Nf8iI7u4", title: { tr: "Flutter Animasyonlar", en: "Flutter Animations" }, duration: 1400 },
+    { youtubeId: "v9CHRlbLj5s", title: { tr: "Uygulama İkonu & Splash Screen", en: "App Icon & Splash Screen" }, duration: 1200 },
+    { youtubeId: "R6vM0r_S0Xk", title: { tr: "Play Store & App Store Yayınlama", en: "Play Store & App Store Publishing" }, duration: 2000 }
   ];
 
   for (let i = 0; i < flutterVideos.length; i++) {
     await storage.createVideo({
-      courseId: course3.id,
+      courseId: course2.id,
       title: flutterVideos[i].title,
       description: { tr: "Flutter ile geliştirme", en: "Development with Flutter" },
       youtubeId: flutterVideos[i].youtubeId,
