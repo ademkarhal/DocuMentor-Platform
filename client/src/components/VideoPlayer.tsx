@@ -26,11 +26,11 @@ export default function VideoPlayer({
   onComplete,
   className = "",
 }: VideoPlayerProps) {
-  const progressIntervalRef = useRef<NodeJS.Timeout | null>(null);
-  const currentVideoIdRef = useRef<number | null>(null);
+  const progressIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const currentPositionRef = useRef<number>(0);
   const hasCompletedRef = useRef<boolean>(false);
   const isVisibleRef = useRef<boolean>(true);
+  const lastVideoIdRef = useRef<number | null>(null);
 
   const activeSource = sources[activeIndex];
 
@@ -40,43 +40,6 @@ export default function VideoPlayer({
       progressIntervalRef.current = null;
     }
   }, []);
-
-  const startProgressTracking = useCallback(() => {
-    if (!activeSource) return;
-    
-    clearProgressInterval();
-    
-    progressIntervalRef.current = setInterval(() => {
-      if (!currentVideoIdRef.current || !isVisibleRef.current) return;
-
-      currentPositionRef.current += 1;
-      const position = currentPositionRef.current;
-      const duration = activeSource.duration;
-
-      if (duration > 0) {
-        const percent = Math.min(Math.round((position / duration) * 100), 100);
-        
-        if (onProgress) {
-          onProgress(currentVideoIdRef.current, position, duration, percent);
-        }
-
-        if (percent >= 90 && !hasCompletedRef.current) {
-          hasCompletedRef.current = true;
-          if (onComplete) {
-            onComplete(currentVideoIdRef.current);
-          }
-        }
-
-        if (position >= duration) {
-          clearProgressInterval();
-          
-          if (activeIndex < sources.length - 1 && onVideoChange) {
-            setTimeout(() => onVideoChange(activeIndex + 1), 1500);
-          }
-        }
-      }
-    }, 1000);
-  }, [activeSource, onProgress, onComplete, onVideoChange, activeIndex, sources.length, clearProgressInterval]);
 
   useEffect(() => {
     const handleVisibilityChange = () => {
@@ -90,14 +53,49 @@ export default function VideoPlayer({
   useEffect(() => {
     if (!activeSource) return;
     
-    currentVideoIdRef.current = activeSource.id;
-    currentPositionRef.current = initialPosition;
-    hasCompletedRef.current = initialPosition >= activeSource.duration * 0.9;
+    const isNewVideo = lastVideoIdRef.current !== activeSource.id;
+    lastVideoIdRef.current = activeSource.id;
     
-    startProgressTracking();
+    if (isNewVideo) {
+      currentPositionRef.current = initialPosition;
+      hasCompletedRef.current = activeSource.duration > 0 && initialPosition >= activeSource.duration * 0.9;
+    }
+
+    clearProgressInterval();
+
+    progressIntervalRef.current = setInterval(() => {
+      if (!isVisibleRef.current || !activeSource) return;
+
+      currentPositionRef.current += 1;
+      const position = currentPositionRef.current;
+      const duration = activeSource.duration;
+
+      if (duration > 0) {
+        const percent = Math.min(Math.round((position / duration) * 100), 100);
+        
+        if (onProgress) {
+          onProgress(activeSource.id, position, duration, percent);
+        }
+
+        if (percent >= 90 && !hasCompletedRef.current) {
+          hasCompletedRef.current = true;
+          if (onComplete) {
+            onComplete(activeSource.id);
+          }
+        }
+
+        if (position >= duration) {
+          clearProgressInterval();
+          
+          if (activeIndex < sources.length - 1 && onVideoChange) {
+            setTimeout(() => onVideoChange(activeIndex + 1), 1500);
+          }
+        }
+      }
+    }, 1000);
 
     return clearProgressInterval;
-  }, [activeSource?.id, initialPosition, startProgressTracking, clearProgressInterval]);
+  }, [activeSource?.id, initialPosition, onProgress, onComplete, onVideoChange, activeIndex, sources.length, clearProgressInterval, activeSource]);
 
   if (!activeSource) {
     return (
