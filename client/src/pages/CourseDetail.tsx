@@ -135,9 +135,9 @@ export default function CourseDetail() {
         <div className="space-y-6">
           <div className="flex items-start justify-between gap-4">
             <div>
-              <h1 className="text-2xl font-bold font-display mb-2">{activeVideo ? getLocalized(activeVideo.title as any) : getLocalized(course.title as any)}</h1>
+              <h1 className="text-2xl font-bold font-display mb-2">{activeVideo ? getLocalized(activeVideo.title as { en: string; tr: string }) : getLocalized(course.title as { en: string; tr: string })}</h1>
               <p className="text-muted-foreground leading-relaxed">
-                {activeVideo ? getLocalized(activeVideo.description as any) : getLocalized(course.description as any)}
+                {activeVideo ? getLocalized(activeVideo.description as { en: string; tr: string }) : getLocalized(course.description as { en: string; tr: string })}
               </p>
             </div>
             {activeVideo && (
@@ -183,7 +183,7 @@ export default function CourseDetail() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="font-medium text-sm truncate group-hover:text-primary transition-colors">
-                        {getLocalized(doc.title as any)}
+                        {getLocalized(doc.title as { en: string; tr: string })}
                       </p>
                       <p className="text-xs text-muted-foreground uppercase">{doc.fileType}</p>
                     </div>
@@ -245,7 +245,7 @@ export default function CourseDetail() {
                       "text-sm font-medium leading-tight truncate mr-2",
                       isActive ? "text-primary-foreground" : "text-foreground group-hover:text-primary"
                     )}>
-                      {getLocalized(video.title as any)}
+                      {getLocalized(video.title as { en: string; tr: string })}
                     </p>
                     <span className={cn(
                       "text-[10px] font-mono",
