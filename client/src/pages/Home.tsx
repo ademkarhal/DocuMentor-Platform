@@ -303,24 +303,7 @@ export default function Home() {
               })}
             </div>
           </div>
-        ) : (
-          <Card className="border-dashed border-2 border-primary/30 bg-primary/5">
-            <CardContent className="p-6 text-center">
-              <PlayCircle className="w-12 h-12 text-primary/50 mx-auto mb-3" />
-              <p className="text-muted-foreground">
-                {lang === 'tr' 
-                  ? "Henüz video izlemeye başlamadınız. Bir kursa göz atarak öğrenmeye başlayın!" 
-                  : "You haven't started watching any videos yet. Browse a course to start learning!"}
-              </p>
-              <Link href="/courses">
-                <Button className="mt-4 gap-2" data-testid="button-start-learning">
-                  {lang === 'tr' ? "Kurslara Göz At" : "Browse Courses"}
-                  <ArrowRight className="w-4 h-4" />
-                </Button>
-              </Link>
-            </CardContent>
-          </Card>
-        )}
+) : null}
       </motion.div>
 
       {/* Hero Section */}

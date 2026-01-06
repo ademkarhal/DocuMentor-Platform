@@ -46,9 +46,9 @@ export interface Document {
 const PLAYLISTS = [
   {
     id: "PLQVXoXFVVtp3e_urGZcMNAHx2Eo4Rm5Xk",
-    slug: "flutter-course",
-    defaultTitle: { tr: "Flutter Dersleri", en: "Flutter Course" },
-    defaultDescription: { tr: "Flutter ile mobil uygulama geliştirme", en: "Mobile app development with Flutter" }
+    slug: "csharp-course",
+    defaultTitle: { tr: "C# Programlama Dersleri", en: "C# Programming Course" },
+    defaultDescription: { tr: "C# ile programlama eğitimi", en: "Programming with C#" }
   },
   {
     id: "PLQVXoXFVVtp1DFmoTL4cPTWEWiqndKexZ",
@@ -57,7 +57,13 @@ const PLAYLISTS = [
     defaultDescription: { tr: "ASP.NET Core ile web geliştirme", en: "Web development with ASP.NET Core" }
   },
   {
-    id: "PLQVXoXFVVtp2GGKQP0ElqsBnMFkMnJcMy",
+    id: "PLURN6mxdcwL-xIXzq92ZJN9yRW7Q0mjzw",
+    slug: "react-course",
+    defaultTitle: { tr: "React Dersleri", en: "React Course" },
+    defaultDescription: { tr: "React ile frontend geliştirme", en: "Frontend development with React" }
+  },
+  {
+    id: "PLaZoPjR0BnOG9z5aJ4zudiL3TmfaBZ2Qm",
     slug: "nextjs-course",
     defaultTitle: { tr: "NextJS Dersleri", en: "NextJS Course" },
     defaultDescription: { tr: "NextJS ile modern web uygulamaları", en: "Modern web apps with NextJS" }
