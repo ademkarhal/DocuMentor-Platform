@@ -201,10 +201,35 @@ export function useSearch(query: string) {
               relevance: 1
             });
           }
+          
+          // Search videos in this course from cache
+          const cachedVideos = getFromCache(`videos_${course.id}`) as VideoListResponse | null;
+          if (cachedVideos) {
+            cachedVideos.forEach(video => {
+              const vTitleEn = (video.title as { en: string; tr: string })?.en?.toLowerCase() || '';
+              const vTitleTr = (video.title as { en: string; tr: string })?.tr?.toLowerCase() || '';
+              const vDescEn = (video.description as { en: string; tr: string })?.en?.toLowerCase() || '';
+              const vDescTr = (video.description as { en: string; tr: string })?.tr?.toLowerCase() || '';
+              
+              if (vTitleEn.includes(searchTerm) || vTitleTr.includes(searchTerm) || 
+                  vDescEn.includes(searchTerm) || vDescTr.includes(searchTerm)) {
+                results.push({
+                  type: 'video' as const,
+                  id: video.id,
+                  title: video.title,
+                  url: `/courses/${course.slug}?video=${video.id}`,
+                  relevance: 2
+                });
+              }
+            });
+          }
         });
       }
       
-      // If we have cached results, return them
+      // Sort by relevance (videos first since more specific)
+      results.sort((a, b) => b.relevance - a.relevance);
+      
+      // If we have cached results or cached courses, return them
       if (results.length > 0 || cachedCourses) {
         return results;
       }

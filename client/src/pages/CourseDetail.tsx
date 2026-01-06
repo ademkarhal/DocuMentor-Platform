@@ -1,15 +1,17 @@
 import { useCourse, useCourseVideos, useCourseDocuments } from "@/hooks/use-api";
 import { useTranslation, useStore } from "@/hooks/use-store";
-import { useRoute } from "wouter";
-import { useState, useCallback } from "react";
-import { CheckCircle2, FileText, Download, Play, Clock, Timer, Hourglass, FileSpreadsheet, FileDown } from "lucide-react";
+import { useRoute, useSearch } from "wouter";
+import { useState, useCallback, useEffect } from "react";
+import { CheckCircle2, FileText, Download, Play, Clock, Timer, Hourglass, FileSpreadsheet, FileDown, BookOpen, MessageCircle, Bell, FolderOpen, PlayCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import VideoPlayer from "@/components/VideoPlayer";
 import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export default function CourseDetail() {
   const [, params] = useRoute("/courses/:slug");
   const slug = params?.slug || "";
+  const searchParams = useSearch();
   
   const { t, getLocalized, lang } = useTranslation();
   const { markVideoComplete, markVideoWatched, setVideoProgress, videoProgress, isVideoComplete } = useStore();
@@ -23,6 +25,20 @@ export default function CourseDetail() {
 
   const sortedVideos = videos ? [...videos].sort((a, b) => a.sequenceOrder - b.sequenceOrder) : [];
   const activeVideo = sortedVideos[activeVideoIndex];
+
+  // Handle URL video parameter
+  useEffect(() => {
+    if (searchParams && sortedVideos.length > 0) {
+      const urlParams = new URLSearchParams(searchParams);
+      const videoId = urlParams.get('video');
+      if (videoId) {
+        const index = sortedVideos.findIndex(v => v.id === parseInt(videoId));
+        if (index !== -1) {
+          setActiveVideoIndex(index);
+        }
+      }
+    }
+  }, [searchParams, sortedVideos.length]);
 
   const handleVideoProgress = useCallback((videoId: number, currentTime: number, duration: number, percent: number) => {
     setLiveProgress(prev => ({ ...prev, [videoId]: percent }));
@@ -157,6 +173,46 @@ export default function CourseDetail() {
     }
   };
 
+  // Sample FAQ data
+  const faqData = [
+    {
+      q: lang === 'tr' ? 'Bu kursu tamamlamak ne kadar sürer?' : 'How long does it take to complete this course?',
+      a: lang === 'tr' 
+        ? `Bu kurs toplam ${formatTime(totalDurationSeconds)} video içeriği sunmaktadır. Kendi hızınızda ilerleyebilirsiniz.`
+        : `This course offers a total of ${formatTime(totalDurationSeconds)} of video content. You can progress at your own pace.`
+    },
+    {
+      q: lang === 'tr' ? 'Videoları tekrar izleyebilir miyim?' : 'Can I rewatch the videos?',
+      a: lang === 'tr' 
+        ? 'Evet, tüm videoları istediğiniz kadar tekrar izleyebilirsiniz. İlerlemeniz kaydedilir.'
+        : 'Yes, you can rewatch all videos as many times as you want. Your progress is saved.'
+    },
+    {
+      q: lang === 'tr' ? 'Sertifika alabilir miyim?' : 'Can I get a certificate?',
+      a: lang === 'tr' 
+        ? 'Kursu tamamladığınızda ilerleme durumunuzu dışa aktarabilirsiniz.'
+        : 'When you complete the course, you can export your progress status.'
+    }
+  ];
+
+  // Sample announcements
+  const announcements = [
+    {
+      date: '2025-01-05',
+      title: lang === 'tr' ? 'Kurs İçeriği Güncellendi' : 'Course Content Updated',
+      content: lang === 'tr' 
+        ? 'Yeni videolar ve güncellenmiş materyaller eklendi.'
+        : 'New videos and updated materials have been added.'
+    },
+    {
+      date: '2025-01-01',
+      title: lang === 'tr' ? 'Hoş Geldiniz!' : 'Welcome!',
+      content: lang === 'tr' 
+        ? 'Bu kursa katıldığınız için teşekkürler. İyi öğrenmeler!'
+        : 'Thank you for joining this course. Happy learning!'
+    }
+  ];
+
   if (courseLoading || videosLoading) {
     return (
       <div className="max-w-7xl mx-auto animate-pulse p-6">
@@ -195,66 +251,174 @@ export default function CourseDetail() {
           className="mb-6 shrink-0"
         />
 
-        <div className="space-y-6">
-          <div className="flex items-start justify-between gap-4 flex-wrap">
-            <div className="flex-1 min-w-0">
-              <h1 className="text-2xl font-bold font-display mb-2">{activeVideo ? getLocalized(activeVideo.title as any) : getLocalized(course.title as any)}</h1>
-              <p className="text-muted-foreground leading-relaxed">
-                {activeVideo ? getLocalized(activeVideo.description as any) : getLocalized(course.description as any)}
+        {/* Tabs Section */}
+        <Tabs defaultValue="overview" className="w-full">
+          <TabsList className="w-full justify-start bg-muted/50 p-1 rounded-xl mb-4">
+            <TabsTrigger value="overview" className="flex items-center gap-2 data-[state=active]:bg-background" data-testid="tab-overview">
+              <BookOpen className="w-4 h-4" />
+              {lang === 'tr' ? 'Genel Bakış' : 'Overview'}
+            </TabsTrigger>
+            <TabsTrigger value="qa" className="flex items-center gap-2 data-[state=active]:bg-background" data-testid="tab-qa">
+              <MessageCircle className="w-4 h-4" />
+              {lang === 'tr' ? 'Soru-Cevap' : 'Q&A'}
+            </TabsTrigger>
+            <TabsTrigger value="notes" className="flex items-center gap-2 data-[state=active]:bg-background" data-testid="tab-notes">
+              <Bell className="w-4 h-4" />
+              {lang === 'tr' ? 'Notlar & Duyurular' : 'Notes & Announcements'}
+            </TabsTrigger>
+            <TabsTrigger value="materials" className="flex items-center gap-2 data-[state=active]:bg-background" data-testid="tab-materials">
+              <FolderOpen className="w-4 h-4" />
+              {lang === 'tr' ? 'Materyaller' : 'Materials'}
+            </TabsTrigger>
+          </TabsList>
+
+          {/* Overview Tab */}
+          <TabsContent value="overview" className="space-y-6">
+            <div className="bg-card border border-border rounded-2xl p-6">
+              <h2 className="text-2xl font-bold font-display mb-3">{getLocalized(course.title as any)}</h2>
+              <p className="text-muted-foreground leading-relaxed mb-6">
+                {getLocalized(course.description as any)}
               </p>
+              
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="bg-muted/50 rounded-xl p-4 text-center">
+                  <Clock className="w-6 h-6 mx-auto mb-2 text-blue-500" />
+                  <p className="text-2xl font-bold">{formatTime(totalDurationSeconds)}</p>
+                  <p className="text-xs text-muted-foreground">{lang === 'tr' ? 'Toplam Süre' : 'Total Duration'}</p>
+                </div>
+                <div className="bg-muted/50 rounded-xl p-4 text-center">
+                  <PlayCircle className="w-6 h-6 mx-auto mb-2 text-purple-500" />
+                  <p className="text-2xl font-bold">{sortedVideos.length}</p>
+                  <p className="text-xs text-muted-foreground">{lang === 'tr' ? 'Toplam Video' : 'Total Videos'}</p>
+                </div>
+                <div className="bg-muted/50 rounded-xl p-4 text-center">
+                  <Timer className="w-6 h-6 mx-auto mb-2 text-green-500" />
+                  <p className="text-2xl font-bold">{formatTime(watchedDurationSeconds)}</p>
+                  <p className="text-xs text-muted-foreground">{lang === 'tr' ? 'İzlenen' : 'Watched'}</p>
+                </div>
+                <div className="bg-muted/50 rounded-xl p-4 text-center">
+                  <CheckCircle2 className="w-6 h-6 mx-auto mb-2 text-teal-500" />
+                  <p className="text-2xl font-bold">{sortedVideos.filter(v => isVideoCompleted(v.id)).length}</p>
+                  <p className="text-xs text-muted-foreground">{lang === 'tr' ? 'Tamamlanan' : 'Completed'}</p>
+                </div>
+              </div>
             </div>
+
+            {/* Current Video Info */}
             {activeVideo && (
-              <div 
-                className={cn(
-                  "flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium border shrink-0",
-                  isVideoCompleted(activeVideo.id)
-                    ? "bg-green-100 text-green-700 border-green-200 dark:bg-green-900/30 dark:text-green-400 dark:border-green-800"
-                    : "bg-background text-muted-foreground border-border"
-                )}
-              >
-                {isVideoCompleted(activeVideo.id) ? (
-                  <>
-                    <CheckCircle2 className="w-4 h-4" /> {t.completed}
-                  </>
-                ) : (
-                  <>
-                    <Clock className="w-4 h-4" /> %{getProgress(activeVideo.id)} {t.completed}
-                  </>
-                )}
+              <div className="bg-card border border-border rounded-2xl p-6">
+                <div className="flex items-start justify-between gap-4 flex-wrap">
+                  <div className="flex-1 min-w-0">
+                    <h3 className="text-lg font-bold mb-2">{lang === 'tr' ? 'Şu an izleniyor' : 'Now Playing'}</h3>
+                    <p className="font-medium">{getLocalized(activeVideo.title as any)}</p>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      {getLocalized(activeVideo.description as any)}
+                    </p>
+                  </div>
+                  <div 
+                    className={cn(
+                      "flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium border shrink-0",
+                      isVideoCompleted(activeVideo.id)
+                        ? "bg-green-100 text-green-700 border-green-200 dark:bg-green-900/30 dark:text-green-400 dark:border-green-800"
+                        : "bg-background text-muted-foreground border-border"
+                    )}
+                  >
+                    {isVideoCompleted(activeVideo.id) ? (
+                      <>
+                        <CheckCircle2 className="w-4 h-4" /> {t.completed}
+                      </>
+                    ) : (
+                      <>
+                        <Clock className="w-4 h-4" /> %{getProgress(activeVideo.id)} {t.completed}
+                      </>
+                    )}
+                  </div>
+                </div>
               </div>
             )}
-          </div>
+          </TabsContent>
 
-          {documents && documents.length > 0 && (
+          {/* Q&A Tab */}
+          <TabsContent value="qa" className="space-y-4">
+            <div className="bg-card border border-border rounded-2xl p-6">
+              <h3 className="text-lg font-bold mb-4">{lang === 'tr' ? 'Sıkça Sorulan Sorular' : 'Frequently Asked Questions'}</h3>
+              <div className="space-y-4">
+                {faqData.map((item, i) => (
+                  <div key={i} className="border-b border-border pb-4 last:border-0 last:pb-0">
+                    <p className="font-medium mb-2">{item.q}</p>
+                    <p className="text-sm text-muted-foreground">{item.a}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </TabsContent>
+
+          {/* Notes & Announcements Tab */}
+          <TabsContent value="notes" className="space-y-4">
+            <div className="bg-card border border-border rounded-2xl p-6">
+              <h3 className="text-lg font-bold mb-4">{lang === 'tr' ? 'Duyurular' : 'Announcements'}</h3>
+              <div className="space-y-4">
+                {announcements.map((item, i) => (
+                  <div key={i} className="border-b border-border pb-4 last:border-0 last:pb-0">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Bell className="w-4 h-4 text-primary" />
+                      <span className="font-medium">{item.title}</span>
+                      <span className="text-xs text-muted-foreground ml-auto">{item.date}</span>
+                    </div>
+                    <p className="text-sm text-muted-foreground">{item.content}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="bg-card border border-border rounded-2xl p-6">
+              <h3 className="text-lg font-bold mb-4">{lang === 'tr' ? 'Kurs Notları' : 'Course Notes'}</h3>
+              <p className="text-muted-foreground text-sm">
+                {lang === 'tr' 
+                  ? 'Bu kurs için özel notlar henüz eklenmemiş. Kendi notlarınızı alarak ilerlemenizi takip edebilirsiniz.'
+                  : 'No special notes have been added for this course yet. You can track your progress by taking your own notes.'}
+              </p>
+            </div>
+          </TabsContent>
+
+          {/* Materials Tab */}
+          <TabsContent value="materials">
             <div className="bg-card border border-border rounded-2xl p-6">
               <h3 className="font-semibold mb-4 flex items-center gap-2">
                 <FileText className="w-5 h-5 text-primary" /> {t.documents}
               </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                {documents.map(doc => (
-                  <a 
-                    key={doc.id} 
-                    href={doc.fileUrl} 
-                    target="_blank" 
-                    rel="noreferrer"
-                    className="flex items-center gap-3 p-3 rounded-xl bg-secondary/50 hover:bg-secondary transition-colors group"
-                  >
-                    <div className="w-10 h-10 rounded-lg bg-background flex items-center justify-center text-primary shadow-sm border border-border">
-                      <FileText className="w-5 h-5" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium text-sm truncate group-hover:text-primary transition-colors">
-                        {getLocalized(doc.title as any)}
-                      </p>
-                      <p className="text-xs text-muted-foreground uppercase">{doc.fileType}</p>
-                    </div>
-                    <Download className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />
-                  </a>
-                ))}
-              </div>
+              {documents && documents.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  {documents.map(doc => (
+                    <a 
+                      key={doc.id} 
+                      href={doc.fileUrl} 
+                      target="_blank" 
+                      rel="noreferrer"
+                      className="flex items-center gap-3 p-3 rounded-xl bg-secondary/50 hover:bg-secondary transition-colors group"
+                      data-testid={`link-document-${doc.id}`}
+                    >
+                      <div className="w-10 h-10 rounded-lg bg-background flex items-center justify-center text-primary shadow-sm border border-border">
+                        <FileText className="w-5 h-5" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-sm truncate group-hover:text-primary transition-colors">
+                          {getLocalized(doc.title as any)}
+                        </p>
+                        <p className="text-xs text-muted-foreground uppercase">{doc.fileType}</p>
+                      </div>
+                      <Download className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />
+                    </a>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-muted-foreground text-sm">
+                  {lang === 'tr' ? 'Bu kurs için materyal bulunmamaktadır.' : 'No materials available for this course.'}
+                </p>
+              )}
             </div>
-          )}
-        </div>
+          </TabsContent>
+        </Tabs>
       </div>
 
       <div className="w-full lg:w-96 bg-card border border-border rounded-2xl flex flex-col h-[calc(100vh-7rem)] sticky top-24 shadow-xl shadow-black/5">
