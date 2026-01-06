@@ -67,14 +67,25 @@ export const useStore = create<AppState>()(
       isVideoComplete: (courseId, videoId) => !!get().completedVideos[`${courseId}-${videoId}`],
       getStats: () => {
         const state = get();
-        const watchedCount = Object.keys(state.watchedVideos).length;
         const completedCount = Object.keys(state.completedVideos).length;
         
+        // startedCourses: watchedVideos VEYA videoProgress'te kayıtlı kurslar
         const startedCourses = new Set<string>();
         Object.keys(state.watchedVideos).forEach(key => {
           const courseId = key.split('-')[0];
           startedCourses.add(courseId);
         });
+        // videoProgress'teki kursları da ekle (izlenmeye başlanmış demektir)
+        Object.keys(state.videoProgress).forEach(key => {
+          const courseId = key.split('-')[0];
+          if (state.videoProgress[key] > 0) {
+            startedCourses.add(courseId);
+          }
+        });
+        
+        const watchedCount = startedCourses.size > 0 
+          ? new Set([...Object.keys(state.watchedVideos), ...Object.keys(state.videoProgress).filter(k => state.videoProgress[k] > 0)]).size
+          : 0;
         
         const completedCourseSet = new Set<string>();
         Object.keys(state.completedVideos).forEach(key => {

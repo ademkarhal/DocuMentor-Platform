@@ -218,7 +218,7 @@ export default function Home() {
               </Link>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {courses?.filter(c => stats.startedCourses.includes(c.id)).slice(0, 3).map(course => {
+              {courses?.filter(c => stats.startedCourses.includes(String(c.id))).slice(0, 3).map(course => {
                 const courseCompletedCount = Object.keys(completedVideos).filter(key => key.startsWith(`${course.id}-`)).length;
                 const courseWatchedSeconds = Object.entries(videoProgress)
                   .filter(([key]) => key.startsWith(`${course.id}-`))
