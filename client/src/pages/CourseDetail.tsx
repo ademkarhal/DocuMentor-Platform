@@ -2,7 +2,7 @@ import { useCourse, useCourseVideos, useCourseDocuments } from "@/hooks/use-api"
 import { useTranslation, useStore } from "@/hooks/use-store";
 import { useRoute } from "wouter";
 import { useState, useEffect } from "react";
-import { CheckCircle2, FileText, Download, Play, Clock } from "lucide-react";
+import { CheckCircle2, FileText, Download, Play, Clock, Maximize2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useQuery } from "@tanstack/react-query";
@@ -69,23 +69,38 @@ export default function CourseDetail() {
   return (
     <div className="max-w-7xl mx-auto pb-12 h-[calc(100vh-5rem)] flex flex-col lg:flex-row gap-6">
       <div className="flex-1 flex flex-col min-h-0 overflow-y-auto pr-2">
-        <div className="aspect-video bg-black rounded-2xl overflow-hidden shadow-2xl shadow-black/20 mb-6 shrink-0 relative">
+        <div className="aspect-video bg-gradient-to-br from-slate-900 to-slate-800 rounded-2xl overflow-hidden shadow-2xl shadow-black/30 mb-6 shrink-0 relative group">
           {activeVideo && (
-            <iframe
-              key={activeVideo.id}
-              src={`https://www.youtube.com/embed/${activeVideo.youtubeId}?autoplay=1&rel=0&modestbranding=1`}
-              width="100%"
-              height="100%"
-              className="w-full h-full"
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-              allowFullScreen
-              title={getLocalized(activeVideo.title as any)}
-              data-testid="video-player"
-            />
+            <>
+              <iframe
+                key={activeVideo.id}
+                src={`https://www.youtube.com/embed/${activeVideo.youtubeId}?autoplay=1&rel=0&modestbranding=1`}
+                className="w-full h-full absolute inset-0"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                allowFullScreen
+                title={getLocalized(activeVideo.title as any)}
+                data-testid="video-player"
+              />
+              <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity">
+                <a
+                  href={`https://www.youtube.com/watch?v=${activeVideo.youtubeId}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-black/60 backdrop-blur-sm text-white text-xs rounded-full hover:bg-black/80 transition-colors"
+                  data-testid="button-open-youtube"
+                >
+                  <Maximize2 className="w-3 h-3" />
+                  YouTube'da Ac
+                </a>
+              </div>
+            </>
           )}
           {!activeVideo && !videosLoading && (
-            <div className="w-full h-full flex items-center justify-center text-white/50 bg-muted/20">
-              Select a video to start learning
+            <div className="w-full h-full flex items-center justify-center text-white/50">
+              <div className="text-center">
+                <Play className="w-16 h-16 mx-auto mb-4 opacity-30" />
+                <p>Izlemeye baslamak icin bir video secin</p>
+              </div>
             </div>
           )}
         </div>

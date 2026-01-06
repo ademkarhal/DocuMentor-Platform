@@ -109,3 +109,11 @@
 .prose-content ul {
   @apply list-disc list-inside mb-4 ml-2;
 }
+
+/* Video Player Container */
+.video-player-container {
+  position: relative;
+  border-radius: 1rem;
+  overflow: hidden;
+  background: linear-gradient(135deg, #1e293b, #0f172a);
+}
