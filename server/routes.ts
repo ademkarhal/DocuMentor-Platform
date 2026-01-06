@@ -83,7 +83,7 @@ async function seedDatabase() {
   const course1 = await storage.createCourse({
     categoryId: cat1.id,
     slug: "modern-web-development",
-    title: { tr: "Modern Web Geliştirme (Full Stack)", en: "Modern Web Development (Full Stack)" },
+    title: { tr: "Sıfırdan İleri Seviye Web Geliştirme (Full Stack)", en: "Modern Web Development (Full Stack)" },
     description: { tr: "Sıfırdan ileri seviye web geliştirme", en: "Full stack web development from scratch" },
     thumbnail: "https://images.unsplash.com/photo-1587620962725-abab7fe55159?w=800&q=80",
     totalVideos: 10,
