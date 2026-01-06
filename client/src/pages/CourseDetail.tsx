@@ -1,17 +1,15 @@
 import { useCourse, useCourseVideos, useCourseDocuments } from "@/hooks/use-api";
 import { useTranslation, useStore } from "@/hooks/use-store";
-import { useRoute, useLocation } from "wouter";
+import { useRoute } from "wouter";
 import { useState, useEffect, useRef } from "react";
 import ReactPlayer from "react-player";
-import { CheckCircle2, Circle, FileText, Download, Play, Clock } from "lucide-react";
+import { CheckCircle2, FileText, Download, Play, Clock } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { motion, AnimatePresence } from "framer-motion";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useQuery } from "@tanstack/react-query";
 
 export default function CourseDetail() {
   const [, params] = useRoute("/courses/:slug");
-  const [, setLocation] = useLocation();
   const slug = params?.slug || "";
   
   const { t, getLocalized } = useTranslation();
@@ -33,7 +31,7 @@ export default function CourseDetail() {
     if (videos && videos.length > 0 && !activeVideoId) {
       setActiveVideoId(videos[0].id);
     }
-  }, [videos]);
+  }, [videos, activeVideoId]);
 
   if (courseLoading || videosLoading) {
     return (
@@ -54,15 +52,11 @@ export default function CourseDetail() {
 
   const activeVideo = videos?.find(v => v.id === activeVideoId);
   const currentProgress = progressData?.find((p: any) => p.videoId === activeVideoId);
-  
+
   const handleProgress = (state: { playedSeconds: number }) => {
     if (!activeVideo || !course) return;
     
-    // Auto-mark completed if watched more than 90%
     const isNowCompleted = state.playedSeconds / activeVideo.duration > 0.9;
-    
-    // Only update if position changed significantly (every 5 seconds) to reduce API calls
-    // or if completion status changed
     const lastSavedPosition = currentProgress?.lastPosition || 0;
     const positionDiff = Math.abs(state.playedSeconds - lastSavedPosition);
     const completionChanged = isNowCompleted && !currentProgress?.isCompleted;
@@ -77,10 +71,6 @@ export default function CourseDetail() {
         queryClient.invalidateQueries({ queryKey: [`/api/courses/${course.id}/progress`] });
       });
     }
-  };
-
-  const handleVideoComplete = () => {
-    // Manual completion removed as requested
   };
 
   const getProgress = (vId: number) => {
@@ -104,7 +94,7 @@ export default function CourseDetail() {
     <div className="max-w-7xl mx-auto pb-12 h-[calc(100vh-5rem)] flex flex-col lg:flex-row gap-6">
       <div className="flex-1 flex flex-col min-h-0 overflow-y-auto pr-2">
         <div className="aspect-video bg-black rounded-2xl overflow-hidden shadow-2xl shadow-black/20 mb-6 shrink-0 relative">
-          {activeVideo ? (
+          {activeVideo && (
             <ReactPlayer
               key={activeVideo.id}
               ref={playerRef}
@@ -122,12 +112,17 @@ export default function CourseDetail() {
               onStart={() => setIsReady(true)}
               config={{
                 youtube: {
-                  playerVars: { showinfo: 1 }
+                  playerVars: { 
+                    autoplay: 1,
+                    modestbranding: 1,
+                    rel: 0
+                  }
                 }
               }}
             />
-          ) : (
-            <div className="w-full h-full flex items-center justify-center text-white/50">
+          )}
+          {!activeVideo && !videosLoading && (
+            <div className="w-full h-full flex items-center justify-center text-white/50 bg-muted/20">
               Select a video to start learning
             </div>
           )}
@@ -136,9 +131,9 @@ export default function CourseDetail() {
         <div className="space-y-6">
           <div className="flex items-start justify-between gap-4">
             <div>
-              <h1 className="text-2xl font-bold font-display mb-2">{activeVideo ? getLocalized(activeVideo.title as { en: string; tr: string }) : getLocalized(course.title as { en: string; tr: string })}</h1>
+              <h1 className="text-2xl font-bold font-display mb-2">{activeVideo ? getLocalized(activeVideo.title as any) : getLocalized(course.title as any)}</h1>
               <p className="text-muted-foreground leading-relaxed">
-                {activeVideo ? getLocalized(activeVideo.description as { en: string; tr: string }) : getLocalized(course.description as { en: string; tr: string })}
+                {activeVideo ? getLocalized(activeVideo.description as any) : getLocalized(course.description as any)}
               </p>
             </div>
             {activeVideo && (
@@ -163,7 +158,6 @@ export default function CourseDetail() {
             )}
           </div>
 
-          {/* Documents Section */}
           {documents && documents.length > 0 && (
             <div className="bg-card border border-border rounded-2xl p-6">
               <h3 className="font-semibold mb-4 flex items-center gap-2">
@@ -183,7 +177,7 @@ export default function CourseDetail() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="font-medium text-sm truncate group-hover:text-primary transition-colors">
-                        {getLocalized(doc.title as { en: string; tr: string })}
+                        {getLocalized(doc.title as any)}
                       </p>
                       <p className="text-xs text-muted-foreground uppercase">{doc.fileType}</p>
                     </div>
@@ -196,7 +190,6 @@ export default function CourseDetail() {
         </div>
       </div>
 
-      {/* Sidebar Playlist */}
       <div className="w-full lg:w-96 bg-card border border-border rounded-2xl flex flex-col h-[calc(100vh-7rem)] sticky top-24 shadow-xl shadow-black/5">
         <div className="p-4 border-b border-border bg-muted/20 rounded-t-2xl">
           <h2 className="font-bold text-lg">{t.courseContent}</h2>
@@ -245,7 +238,7 @@ export default function CourseDetail() {
                       "text-sm font-medium leading-tight truncate mr-2",
                       isActive ? "text-primary-foreground" : "text-foreground group-hover:text-primary"
                     )}>
-                      {getLocalized(video.title as { en: string; tr: string })}
+                      {getLocalized(video.title as any)}
                     </p>
                     <span className={cn(
                       "text-[10px] font-mono",
