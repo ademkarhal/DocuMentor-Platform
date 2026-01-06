@@ -6,6 +6,7 @@ import { CheckCircle2, FileText, Download, Play, Clock } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useQuery } from "@tanstack/react-query";
+import VideoPlayer from "@/components/VideoPlayer";
 
 export default function CourseDetail() {
   const [, params] = useRoute("/courses/:slug");
@@ -22,24 +23,16 @@ export default function CourseDetail() {
     enabled: !!course?.id,
   });
 
-  const [activeVideoId, setActiveVideoId] = useState<number | null>(null);
+  const [activeVideoIndex, setActiveVideoIndex] = useState<number>(0);
   const [liveProgress, setLiveProgress] = useState<Record<number, number>>({});
-  const progressIntervalRef = useRef<NodeJS.Timeout | null>(null);
-  const watchStartTimeRef = useRef<number>(0);
-  const startPositionRef = useRef<number>(0);
+  const lastSaveTimeRef = useRef<number>(0);
 
-  useEffect(() => {
-    if (videos && videos.length > 0 && !activeVideoId) {
-      setActiveVideoId(videos[0].id);
-    }
-  }, [videos, activeVideoId]);
+  const activeVideo = videos?.[activeVideoIndex];
 
-  const activeVideo = videos?.find(v => v.id === activeVideoId);
-
-  const saveProgress = useCallback(async (videoId: number, position: number, duration: number) => {
+  const saveProgress = useCallback(async (videoId: number, position: number, duration: number, forceComplete = false) => {
     if (!course?.id) return;
     
-    const isCompleted = position / duration >= 0.9;
+    const isCompleted = forceComplete || position / duration >= 0.9;
     try {
       await apiRequest("POST", "/api/progress", {
         courseId: course.id,
@@ -53,48 +46,34 @@ export default function CourseDetail() {
     } catch (e) {}
   }, [course?.id]);
 
-  useEffect(() => {
-    if (!activeVideo || !course?.id) return;
-
-    const existingProgress = progressData?.find((p: any) => p.videoId === activeVideo.id);
-    startPositionRef.current = existingProgress?.lastPosition || 0;
-    watchStartTimeRef.current = Date.now();
+  const handleVideoProgress = useCallback((videoId: number, currentTime: number, duration: number, percent: number) => {
+    setLiveProgress(prev => ({ ...prev, [videoId]: percent }));
     
-    if (progressIntervalRef.current) {
-      clearInterval(progressIntervalRef.current);
+    const now = Date.now();
+    if (now - lastSaveTimeRef.current >= 10000) {
+      lastSaveTimeRef.current = now;
+      saveProgress(videoId, currentTime, duration);
     }
+  }, [saveProgress]);
 
-    const videoId = activeVideo.id;
-    const duration = activeVideo.duration;
-    const courseId = course.id;
+  const handleVideoComplete = useCallback((videoId: number) => {
+    setLiveProgress(prev => ({ ...prev, [videoId]: 100 }));
+    const video = videos?.find(v => v.id === videoId);
+    if (video) {
+      saveProgress(videoId, video.duration, video.duration, true);
+    }
+  }, [saveProgress, videos]);
 
-    progressIntervalRef.current = setInterval(() => {
-      const elapsedSeconds = Math.floor((Date.now() - watchStartTimeRef.current) / 1000);
-      const currentPosition = startPositionRef.current + elapsedSeconds;
-      
-      if (currentPosition >= duration) {
-        setLiveProgress(prev => ({ ...prev, [videoId]: 100 }));
-        saveProgress(videoId, duration, duration);
-        if (progressIntervalRef.current) {
-          clearInterval(progressIntervalRef.current);
-        }
-        return;
-      }
+  const handleVideoChange = useCallback((newIndex: number) => {
+    setActiveVideoIndex(newIndex);
+  }, []);
 
-      const progressPercent = Math.min(Math.round((currentPosition / duration) * 100), 99);
-      setLiveProgress(prev => ({ ...prev, [videoId]: progressPercent }));
-
-      if (elapsedSeconds > 0 && elapsedSeconds % 10 === 0) {
-        saveProgress(videoId, currentPosition, duration);
-      }
-    }, 1000);
-
-    return () => {
-      if (progressIntervalRef.current) {
-        clearInterval(progressIntervalRef.current);
-      }
-    };
-  }, [activeVideo?.id, course?.id, progressData, saveProgress]);
+  const videoSources = videos?.sort((a, b) => a.sequenceOrder - b.sequenceOrder).map(v => ({
+    id: v.id,
+    youtubeId: v.youtubeId,
+    title: typeof v.title === 'object' ? (v.title as any).en : v.title,
+    duration: v.duration
+  })) || [];
 
   if (courseLoading || videosLoading) {
     return (
@@ -130,25 +109,27 @@ export default function CourseDetail() {
   };
 
   const handleVideoSelect = (vId: number) => {
-    setActiveVideoId(vId);
+    const sortedVideos = videos?.sort((a, b) => a.sequenceOrder - b.sequenceOrder) || [];
+    const index = sortedVideos.findIndex(v => v.id === vId);
+    if (index !== -1) {
+      setActiveVideoIndex(index);
+    }
   };
 
   return (
     <div className="max-w-7xl mx-auto pb-12 h-[calc(100vh-5rem)] flex flex-col lg:flex-row gap-6">
       <div className="flex-1 flex flex-col min-h-0 overflow-y-auto pr-2">
-        <div className="aspect-video bg-gradient-to-br from-slate-900 to-slate-800 rounded-2xl overflow-hidden shadow-2xl shadow-black/30 mb-6 shrink-0 relative youtube-container">
-          {activeVideo && (
-            <iframe
-              key={activeVideo.id}
-              src={`https://www.youtube-nocookie.com/embed/${activeVideo.youtubeId}?autoplay=1&rel=0&modestbranding=1&showinfo=0&iv_load_policy=3`}
-              className="w-full h-full absolute inset-0"
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-              allowFullScreen
-              title={getLocalized(activeVideo.title as any)}
-              data-testid="video-player"
+        <div className="aspect-video bg-gradient-to-br from-slate-900 to-slate-800 rounded-2xl overflow-hidden shadow-2xl shadow-black/30 mb-6 shrink-0 relative">
+          {videoSources.length > 0 ? (
+            <VideoPlayer
+              sources={videoSources}
+              activeIndex={activeVideoIndex}
+              onVideoChange={handleVideoChange}
+              onProgress={handleVideoProgress}
+              onComplete={handleVideoComplete}
+              className="w-full h-full"
             />
-          )}
-          {!activeVideo && !videosLoading && (
+          ) : (
             <div className="w-full h-full flex items-center justify-center text-white/50 absolute inset-0">
               <div className="text-center">
                 <Play className="w-16 h-16 mx-auto mb-4 opacity-30" />
@@ -236,7 +217,7 @@ export default function CourseDetail() {
 
         <div className="flex-1 overflow-y-auto p-2 space-y-1 custom-scrollbar">
           {videos?.sort((a,b) => a.sequenceOrder - b.sequenceOrder).map((video, index) => {
-            const isActive = activeVideoId === video.id;
+            const isActive = activeVideo?.id === video.id;
             const isCompleted = isVideoCompleted(video.id);
             const progress = getProgress(video.id);
 
