@@ -2,7 +2,7 @@ import { useCourse, useCourseVideos, useCourseDocuments } from "@/hooks/use-api"
 import { useTranslation, useStore } from "@/hooks/use-store";
 import { useRoute } from "wouter";
 import { useState, useEffect } from "react";
-import { CheckCircle2, FileText, Download, Play, Clock, Maximize2 } from "lucide-react";
+import { CheckCircle2, FileText, Download, Play, Clock, ExternalLink } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useQuery } from "@tanstack/react-query";
@@ -76,7 +76,7 @@ export default function CourseDetail() {
                 key={activeVideo.id}
                 src={`https://www.youtube.com/embed/${activeVideo.youtubeId}?autoplay=1&rel=0&modestbranding=1`}
                 className="w-full h-full absolute inset-0"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                 allowFullScreen
                 title={getLocalized(activeVideo.title as any)}
                 data-testid="video-player"
@@ -89,7 +89,7 @@ export default function CourseDetail() {
                   className="flex items-center gap-1.5 px-3 py-1.5 bg-black/60 backdrop-blur-sm text-white text-xs rounded-full hover:bg-black/80 transition-colors"
                   data-testid="button-open-youtube"
                 >
-                  <Maximize2 className="w-3 h-3" />
+                  <ExternalLink className="w-3 h-3" />
                   YouTube'da Ac
                 </a>
               </div>
