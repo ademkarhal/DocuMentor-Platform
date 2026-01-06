@@ -555,18 +555,14 @@ export default function CourseDetail() {
                       <Clock className="w-3 h-3" />
                       {formatVideoTime(video.duration)}
                     </span>
-                    {videoWatchedSeconds > 0 && (
-                      <>
-                        <span className="flex items-center gap-1 text-green-500">
-                          <Timer className="w-3 h-3" />
-                          {formatVideoTime(videoWatchedSeconds)}
-                        </span>
-                        <span className="flex items-center gap-1 text-orange-500">
-                          <Hourglass className="w-3 h-3" />
-                          {formatVideoTime(videoRemainingSeconds)}
-                        </span>
-                      </>
-                    )}
+                    <span className={cn("flex items-center gap-1", isActive ? "text-green-300" : "text-green-500")}>
+                      <Timer className="w-3 h-3" />
+                      {formatVideoTime(videoWatchedSeconds)}
+                    </span>
+                    <span className={cn("flex items-center gap-1", isActive ? "text-orange-300" : "text-orange-500")}>
+                      <Hourglass className="w-3 h-3" />
+                      {formatVideoTime(videoRemainingSeconds)}
+                    </span>
                   </div>
                 </div>
               </button>

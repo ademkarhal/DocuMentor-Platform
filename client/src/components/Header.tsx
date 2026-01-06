@@ -92,12 +92,14 @@ export function Header() {
                           "group-hover:text-primary transition-colors line-clamp-1",
                           result.type === 'course' ? "font-semibold text-sm" : "text-sm"
                         )}>
-                          {getLocalized(result.title)}
+                          {getLocalized(result.title as { en: string; tr: string })}
                         </p>
-                        <p className="text-xs text-muted-foreground mt-0.5">
+                        <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1">
                           {result.type === 'course' 
-                            ? (lang === 'tr' ? 'Kurs' : 'Course')
-                            : (lang === 'tr' ? 'Video Dersi' : 'Video Lesson')}
+                            ? (result.categoryName || (lang === 'tr' ? 'Kurs' : 'Course'))
+                            : (result.categoryName && result.courseName 
+                                ? `${result.categoryName} / ${result.courseName}`
+                                : (lang === 'tr' ? 'Video Dersi' : 'Video Lesson'))}
                         </p>
                       </div>
                     </button>

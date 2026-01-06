@@ -100,6 +100,26 @@ export function useCategory(slug: string) {
   });
 }
 
+// Preload all videos for all courses in background
+async function preloadAllVideos(courses: CourseListResponse): Promise<void> {
+  for (const course of courses) {
+    const cacheKey = `videos_${course.id}`;
+    const cached = getFromCache(cacheKey);
+    if (!cached) {
+      try {
+        const url = buildUrl(api.courses.getVideos.path, { id: course.id });
+        const res = await fetch(url);
+        if (res.ok) {
+          const data = api.courses.getVideos.responses[200].parse(await res.json());
+          setToCache(cacheKey, data);
+        }
+      } catch {
+        // Ignore errors for background preload
+      }
+    }
+  }
+}
+
 // Courses
 export function useCourses() {
   return useQuery<CourseListResponse>({
@@ -107,12 +127,20 @@ export function useCourses() {
     queryFn: async () => {
       const cacheKey = 'courses';
       const cached = getFromCache(cacheKey) as CourseListResponse | null;
-      if (cached) return cached;
+      if (cached) {
+        // Preload videos in background
+        preloadAllVideos(cached);
+        return cached;
+      }
       
       const res = await fetch(api.courses.list.path);
       if (!res.ok) throw new Error("Failed to fetch courses");
       const data = api.courses.list.responses[200].parse(await res.json()) as CourseListResponse;
       setToCache(cacheKey, data);
+      
+      // Preload videos in background
+      preloadAllVideos(data);
+      
       return data;
     },
     staleTime: CACHE_DURATION,
@@ -184,7 +212,7 @@ export function useCourseDocuments(courseId: number | undefined) {
   });
 }
 
-// Extended search result with parent course info
+// Extended search result with hierarchy info
 export interface ExtendedSearchResult {
   type: 'course' | 'video';
   id: number;
@@ -194,6 +222,7 @@ export interface ExtendedSearchResult {
   courseId?: number;
   courseName?: string;
   courseSlug?: string;
+  categoryName?: string;
 }
 
 // Search - uses localStorage cached data first, falls back to API
@@ -206,6 +235,24 @@ export function useSearch(query: string) {
       const searchTerm = query.toLowerCase().trim();
       const results: ExtendedSearchResult[] = [];
       
+      // Get categories for hierarchy display
+      const cachedCategories = getFromCache('categories') as CategoryListResponse | null;
+      const getCategoryName = (categoryId: number): string => {
+        if (!cachedCategories) return '';
+        const category = cachedCategories.find(c => c.id === categoryId);
+        if (!category) return '';
+        const catTitle = (category.title as { en: string; tr: string })?.tr || (category.title as { en: string; tr: string })?.en;
+        // Check for parent category
+        if (category.parentId) {
+          const parent = cachedCategories.find(c => c.id === category.parentId);
+          if (parent) {
+            const parentTitle = (parent.title as { en: string; tr: string })?.tr || (parent.title as { en: string; tr: string })?.en;
+            return `${parentTitle} / ${catTitle}`;
+          }
+        }
+        return catTitle;
+      };
+      
       // Try to search from cached courses first
       const cachedCourses = getFromCache('courses') as CourseListResponse | null;
       if (cachedCourses) {
@@ -217,6 +264,9 @@ export function useSearch(query: string) {
           
           const courseMatches = titleEn.includes(searchTerm) || titleTr.includes(searchTerm) || 
               descEn.includes(searchTerm) || descTr.includes(searchTerm);
+          
+          const courseName = (course.title as { en: string; tr: string })?.tr || (course.title as { en: string; tr: string })?.en;
+          const categoryName = getCategoryName(course.categoryId);
           
           // Search videos in this course from cache
           const cachedVideos = getFromCache(`videos_${course.id}`) as VideoListResponse | null;
@@ -238,8 +288,9 @@ export function useSearch(query: string) {
                   url: `/courses/${course.slug}?video=${video.id}`,
                   relevance: 1,
                   courseId: course.id,
-                  courseName: (course.title as { en: string; tr: string })?.tr || (course.title as { en: string; tr: string })?.en,
-                  courseSlug: course.slug
+                  courseName: courseName,
+                  courseSlug: course.slug,
+                  categoryName: categoryName
                 });
               }
             });
@@ -254,7 +305,8 @@ export function useSearch(query: string) {
               url: `/courses/${course.slug}`,
               relevance: 2,
               courseId: course.id,
-              courseSlug: course.slug
+              courseSlug: course.slug,
+              categoryName: categoryName
             });
             
             // Add matching videos under this course
@@ -279,7 +331,14 @@ export function useSearch(query: string) {
       const apiResults = api.search.query.responses[200].parse(await res.json()) as SearchResponse;
       
       // Merge API results with cached results, avoiding duplicates
-      const apiExtended = apiResults.map(r => ({ ...r, courseId: undefined, courseName: undefined, courseSlug: undefined }));
+      const apiExtended: ExtendedSearchResult[] = apiResults.map(r => ({ 
+        ...r, 
+        title: r.title as unknown,
+        courseId: undefined, 
+        courseName: undefined, 
+        courseSlug: undefined, 
+        categoryName: undefined 
+      }));
       
       // Combine: cached course results + API video results
       const existingIds = new Set(results.map(r => `${r.type}-${r.id}`));
