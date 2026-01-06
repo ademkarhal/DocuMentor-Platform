@@ -1,13 +1,4 @@
 import { useEffect, useRef, useCallback } from "react";
-import videojs from "video.js";
-import "video.js/dist/video-js.css";
-import type Player from "video.js/dist/types/player";
-
-declare global {
-  interface Window {
-    videojs: typeof videojs;
-  }
-}
 
 interface VideoSource {
   id: number;
@@ -19,6 +10,7 @@ interface VideoSource {
 interface VideoPlayerProps {
   sources: VideoSource[];
   activeIndex: number;
+  initialPosition?: number;
   onVideoChange?: (index: number) => void;
   onProgress?: (videoId: number, currentTime: number, duration: number, percent: number) => void;
   onComplete?: (videoId: number) => void;
@@ -30,159 +22,82 @@ interface VideoPlayerProps {
 export default function VideoPlayer({
   sources,
   activeIndex,
+  initialPosition = 0,
   onVideoChange,
   onProgress,
   onComplete,
-  onPlay,
-  onPause,
   className = "",
 }: VideoPlayerProps) {
-  const videoRef = useRef<HTMLDivElement>(null);
-  const playerRef = useRef<Player | null>(null);
-  const lastReportedTime = useRef<number>(0);
+  const progressIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const watchStartTimeRef = useRef<number>(0);
+  const startPositionRef = useRef<number>(0);
   const currentVideoIdRef = useRef<number | null>(null);
 
-  const initializePlayer = useCallback(async () => {
-    if (!videoRef.current || typeof window === "undefined") return;
+  const activeSource = sources[activeIndex];
 
-    window.videojs = videojs;
-
-    try {
-      const vjsYoutube = await import("videojs-youtube");
-      if (vjsYoutube.default) {
-        vjsYoutube.default;
-      }
-    } catch (e) {
-      console.warn("YouTube plugin loading:", e);
-    }
-
-    if (playerRef.current) {
-      playerRef.current.dispose();
-      playerRef.current = null;
-    }
-
-    const videoElement = document.createElement("video-js");
-    videoElement.classList.add("vjs-big-play-centered", "vjs-theme-custom");
-    videoRef.current.innerHTML = "";
-    videoRef.current.appendChild(videoElement);
-
-    const activeSource = sources[activeIndex];
+  useEffect(() => {
     if (!activeSource) return;
 
     currentVideoIdRef.current = activeSource.id;
+    startPositionRef.current = initialPosition;
+    watchStartTimeRef.current = Date.now();
 
-    const player = videojs(videoElement, {
-      techOrder: ["youtube"],
-      sources: [
-        {
-          type: "video/youtube",
-          src: `https://www.youtube.com/watch?v=${activeSource.youtubeId}`,
-        },
-      ],
-      youtube: {
-        ytControls: 0,
-        modestbranding: 1,
-        rel: 0,
-        showinfo: 0,
-        iv_load_policy: 3,
-        playsinline: 1,
-        customVars: {
-          wmode: "transparent",
-        },
-      },
-      autoplay: true,
-      controls: true,
-      responsive: true,
-      fluid: true,
-      playbackRates: [0.5, 0.75, 1, 1.25, 1.5, 2],
-      controlBar: {
-        children: [
-          "playToggle",
-          "volumePanel",
-          "currentTimeDisplay",
-          "timeDivider",
-          "durationDisplay",
-          "progressControl",
-          "playbackRateMenuButton",
-          "fullscreenToggle",
-        ],
-      },
-    });
+    if (progressIntervalRef.current) {
+      clearInterval(progressIntervalRef.current);
+    }
 
-    player.on("play", () => {
-      if (currentVideoIdRef.current && onPlay) {
-        onPlay(currentVideoIdRef.current);
-      }
-    });
+    const videoId = activeSource.id;
+    const duration = activeSource.duration;
 
-    player.on("pause", () => {
-      if (currentVideoIdRef.current && onPause) {
-        onPause(currentVideoIdRef.current);
-      }
-    });
+    progressIntervalRef.current = setInterval(() => {
+      const elapsedSeconds = Math.floor((Date.now() - watchStartTimeRef.current) / 1000);
+      const currentPosition = startPositionRef.current + elapsedSeconds;
 
-    player.on("timeupdate", () => {
-      const currentTime = player.currentTime() || 0;
-      const duration = player.duration() || 0;
-
-      if (duration > 0 && currentVideoIdRef.current) {
-        const percent = Math.round((currentTime / duration) * 100);
-
-        if (Math.abs(currentTime - lastReportedTime.current) >= 1) {
-          lastReportedTime.current = currentTime;
-          if (onProgress) {
-            onProgress(currentVideoIdRef.current, currentTime, duration, percent);
-          }
+      if (currentPosition >= duration) {
+        if (onComplete) {
+          onComplete(videoId);
         }
+        if (progressIntervalRef.current) {
+          clearInterval(progressIntervalRef.current);
+        }
+        if (activeIndex < sources.length - 1 && onVideoChange) {
+          setTimeout(() => onVideoChange(activeIndex + 1), 1000);
+        }
+        return;
       }
-    });
 
-    player.on("ended", () => {
-      if (currentVideoIdRef.current && onComplete) {
-        onComplete(currentVideoIdRef.current);
+      const progressPercent = Math.min(Math.round((currentPosition / duration) * 100), 99);
+      if (onProgress) {
+        onProgress(videoId, currentPosition, duration, progressPercent);
       }
-
-      if (activeIndex < sources.length - 1 && onVideoChange) {
-        onVideoChange(activeIndex + 1);
-      }
-    });
-
-    player.on("error", (e: any) => {
-      console.error("Video player error:", e);
-    });
-
-    playerRef.current = player;
-  }, [sources, activeIndex, onProgress, onComplete, onPlay, onPause, onVideoChange]);
-
-  useEffect(() => {
-    initializePlayer();
+    }, 1000);
 
     return () => {
-      if (playerRef.current) {
-        playerRef.current.dispose();
-        playerRef.current = null;
+      if (progressIntervalRef.current) {
+        clearInterval(progressIntervalRef.current);
       }
     };
-  }, [initializePlayer]);
+  }, [activeSource?.id, activeSource?.duration, activeIndex, sources.length, initialPosition, onProgress, onComplete, onVideoChange]);
 
-  useEffect(() => {
-    if (playerRef.current && sources[activeIndex]) {
-      const activeSource = sources[activeIndex];
-      currentVideoIdRef.current = activeSource.id;
-      lastReportedTime.current = 0;
-
-      playerRef.current.src({
-        type: "video/youtube",
-        src: `https://www.youtube.com/watch?v=${activeSource.youtubeId}`,
-      });
-
-      playerRef.current.play()?.catch(() => {});
-    }
-  }, [activeIndex, sources]);
+  if (!activeSource) {
+    return (
+      <div className={`video-player-wrapper flex items-center justify-center ${className}`}>
+        <p className="text-white/50">Video bulunamadi</p>
+      </div>
+    );
+  }
 
   return (
-    <div className={`video-player-wrapper ${className}`}>
-      <div ref={videoRef} data-testid="video-player" />
+    <div className={`video-player-wrapper youtube-container ${className}`}>
+      <iframe
+        key={activeSource.id}
+        src={`https://www.youtube-nocookie.com/embed/${activeSource.youtubeId}?autoplay=1&rel=0&modestbranding=1&showinfo=0&iv_load_policy=3&start=${Math.floor(initialPosition)}`}
+        className="w-full h-full absolute inset-0"
+        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+        allowFullScreen
+        title={activeSource.title}
+        data-testid="video-player"
+      />
     </div>
   );
 }

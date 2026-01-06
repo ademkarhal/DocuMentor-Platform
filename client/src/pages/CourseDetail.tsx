@@ -75,6 +75,12 @@ export default function CourseDetail() {
     duration: v.duration
   })) || [];
 
+  const getInitialPosition = () => {
+    if (!activeVideo) return 0;
+    const p = progressData?.find((p: any) => p.videoId === activeVideo.id);
+    return p?.lastPosition || 0;
+  };
+
   if (courseLoading || videosLoading) {
     return (
       <div className="max-w-7xl mx-auto animate-pulse p-6">
@@ -124,6 +130,7 @@ export default function CourseDetail() {
             <VideoPlayer
               sources={videoSources}
               activeIndex={activeVideoIndex}
+              initialPosition={getInitialPosition()}
               onVideoChange={handleVideoChange}
               onProgress={handleVideoProgress}
               onComplete={handleVideoComplete}
