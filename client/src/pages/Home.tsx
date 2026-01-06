@@ -1,7 +1,7 @@
 import { useCategories, useCourses } from "@/hooks/use-api";
 import { useTranslation, useStore } from "@/hooks/use-store";
 import { Link } from "wouter";
-import { ArrowRight, PlayCircle, Book, Layers, Trophy, Target, CheckCircle, BarChart3, Clock, TrendingUp, Play } from "lucide-react";
+import { ArrowRight, PlayCircle, Book, Layers, Trophy, Target, CheckCircle, BarChart3, Clock, TrendingUp, Play, GraduationCap } from "lucide-react";
 import { motion } from "framer-motion";
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
@@ -11,13 +11,28 @@ export default function Home() {
   const { t, getLocalized, lang } = useTranslation();
   const { data: categories, isLoading: catLoading } = useCategories();
   const { data: courses, isLoading: coursesLoading } = useCourses();
-  const { getStats, videoProgress } = useStore();
+  const { getStats, videoProgress, completedVideos } = useStore();
   
   const stats = getStats();
   const featuredCourses = courses?.slice(0, 3);
   
+  const totalCourses = courses?.length || 0;
   const totalVideos = courses?.reduce((sum, c) => sum + (c.totalVideos || 0), 0) || 0;
-  const successRate = totalVideos > 0 ? Math.round((stats.completedCount / totalVideos) * 100) : 0;
+  
+  // Calculate total duration of all videos (estimate ~10min per video if not available)
+  const totalDurationSeconds = courses?.reduce((sum, c) => sum + ((c.totalVideos || 0) * 600), 0) || 0;
+  const totalDurationHours = Math.floor(totalDurationSeconds / 3600);
+  const totalDurationMinutes = Math.floor((totalDurationSeconds % 3600) / 60);
+  
+  // Calculate completed courses (all videos in course completed)
+  const completedCourseCount = courses?.filter(course => {
+    if (!course.totalVideos || course.totalVideos === 0) return false;
+    const courseCompletedVideos = Object.keys(completedVideos).filter(key => key.startsWith(`${course.id}-`)).length;
+    return courseCompletedVideos >= course.totalVideos;
+  }).length || 0;
+  
+  const videoSuccessRate = totalVideos > 0 ? Math.round((stats.completedCount / totalVideos) * 100) : 0;
+  const courseSuccessRate = totalCourses > 0 ? Math.round((completedCourseCount / totalCourses) * 100) : 0;
   
   const totalWatchedSeconds = Object.values(videoProgress).reduce((sum, v) => sum + (v || 0), 0);
   const watchedHours = Math.floor(totalWatchedSeconds / 3600);
@@ -28,6 +43,13 @@ export default function Home() {
     .sort((a, b) => b[1] - a[1])[0]?.[0];
   
   const lastWatchedCourseSlug = lastWatchedKey ? courses?.find(c => lastWatchedKey.startsWith(`${c.id}-`))?.slug : null;
+  
+  const formatDuration = (hours: number, minutes: number) => {
+    if (lang === 'tr') {
+      return hours > 0 ? `${hours}s ${minutes}dk` : `${minutes}dk`;
+    }
+    return hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`;
+  };
 
   const container = {
     hidden: { opacity: 0 },
@@ -46,42 +68,56 @@ export default function Home() {
     {
       icon: Book,
       label: lang === 'tr' ? "Toplam Kurs" : "Total Courses",
-      value: courses?.length || 0,
+      value: totalCourses,
+      subtext: formatDuration(totalDurationHours, totalDurationMinutes),
       color: "text-blue-500",
       bgColor: "bg-blue-500/10",
+    },
+    {
+      icon: Target,
+      label: lang === 'tr' ? "Başlanan Kurs" : "Courses Started",
+      value: stats.startedCourses.length,
+      subtext: `/ ${totalCourses}`,
+      color: "text-orange-500",
+      bgColor: "bg-orange-500/10",
+    },
+    {
+      icon: GraduationCap,
+      label: lang === 'tr' ? "Tamamlanan Kurs" : "Courses Completed",
+      value: completedCourseCount,
+      subtext: `/ ${totalCourses}`,
+      color: "text-green-500",
+      bgColor: "bg-green-500/10",
     },
     {
       icon: PlayCircle,
       label: lang === 'tr' ? "Toplam Video" : "Total Videos",
       value: totalVideos,
+      subtext: formatDuration(totalDurationHours, totalDurationMinutes),
       color: "text-purple-500",
       bgColor: "bg-purple-500/10",
     },
     {
-      icon: Target,
+      icon: Layers,
       label: lang === 'tr' ? "Başlanan Video" : "Videos Started",
       value: stats.watchedCount,
-      color: "text-orange-500",
-      bgColor: "bg-orange-500/10",
+      subtext: `/ ${totalVideos}`,
+      color: "text-cyan-500",
+      bgColor: "bg-cyan-500/10",
     },
     {
       icon: CheckCircle,
       label: lang === 'tr' ? "Tamamlanan Video" : "Videos Completed",
       value: stats.completedCount,
-      color: "text-green-500",
-      bgColor: "bg-green-500/10",
-    },
-    {
-      icon: Layers,
-      label: lang === 'tr' ? "Aktif Kurs" : "Active Courses",
-      value: stats.startedCourses.length,
-      color: "text-cyan-500",
-      bgColor: "bg-cyan-500/10",
+      subtext: `/ ${totalVideos}`,
+      color: "text-teal-500",
+      bgColor: "bg-teal-500/10",
     },
     {
       icon: Clock,
       label: lang === 'tr' ? "İzleme Süresi" : "Watch Time",
-      value: watchedHours > 0 ? `${watchedHours}s ${watchedMinutes}dk` : `${watchedMinutes}dk`,
+      value: formatDuration(watchedHours, watchedMinutes),
+      subtext: `/ ${formatDuration(totalDurationHours, totalDurationMinutes)}`,
       color: "text-pink-500",
       bgColor: "bg-pink-500/10",
     },
@@ -110,16 +146,19 @@ export default function Home() {
           )}
         </div>
         
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
           {dashboardCards.map((card, idx) => (
             <Card key={idx} className="border-border/50">
-              <CardContent className="p-4">
-                <div className="flex flex-col items-center text-center gap-2">
-                  <div className={`w-12 h-12 rounded-xl ${card.bgColor} ${card.color} flex items-center justify-center`}>
-                    <card.icon className="w-6 h-6" />
+              <CardContent className="p-3">
+                <div className="flex flex-col items-center text-center gap-1">
+                  <div className={`w-10 h-10 rounded-xl ${card.bgColor} ${card.color} flex items-center justify-center`}>
+                    <card.icon className="w-5 h-5" />
                   </div>
-                  <p className="text-2xl font-bold" data-testid={`stat-value-${idx}`}>{card.value}</p>
-                  <p className="text-xs text-muted-foreground">{card.label}</p>
+                  <div className="flex items-baseline gap-1">
+                    <p className="text-xl font-bold" data-testid={`stat-value-${idx}`}>{card.value}</p>
+                    <span className="text-xs text-muted-foreground">{card.subtext}</span>
+                  </div>
+                  <p className="text-[10px] text-muted-foreground leading-tight">{card.label}</p>
                 </div>
               </CardContent>
             </Card>
@@ -136,17 +175,19 @@ export default function Home() {
                 </div>
                 <div>
                   <span className="font-semibold">{lang === 'tr' ? "Başarı Oranı" : "Success Rate"}</span>
-                  <p className="text-xs text-muted-foreground">
-                    {stats.completedCount} / {totalVideos} {lang === 'tr' ? "video tamamlandı" : "videos completed"}
-                  </p>
+                  <div className="flex flex-wrap gap-x-3 gap-y-0 text-xs text-muted-foreground">
+                    <span>{completedCourseCount} / {totalCourses} {lang === 'tr' ? "kurs" : "courses"}</span>
+                    <span>{stats.completedCount} / {totalVideos} {lang === 'tr' ? "video" : "videos"}</span>
+                    <span>{formatDuration(watchedHours, watchedMinutes)} / {formatDuration(totalDurationHours, totalDurationMinutes)}</span>
+                  </div>
                 </div>
               </div>
               <div className="flex items-center gap-2">
                 <TrendingUp className="w-5 h-5 text-green-500" />
-                <span className="text-3xl font-bold text-primary" data-testid="stat-success-rate">{successRate}%</span>
+                <span className="text-3xl font-bold text-primary" data-testid="stat-success-rate">{videoSuccessRate}%</span>
               </div>
             </div>
-            <Progress value={successRate} className="h-3" />
+            <Progress value={videoSuccessRate} className="h-3" />
           </CardContent>
         </Card>
 
