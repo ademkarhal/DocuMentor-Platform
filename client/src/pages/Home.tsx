@@ -1,7 +1,7 @@
 import { useCategories, useCourses } from "@/hooks/use-api";
 import { useTranslation, useStore } from "@/hooks/use-store";
 import { Link } from "wouter";
-import { ArrowRight, PlayCircle, Book, Layers, Trophy, Target, CheckCircle, BarChart3, Clock, TrendingUp, Play, GraduationCap, Timer } from "lucide-react";
+import { ArrowRight, PlayCircle, Book, Layers, Trophy, Target, CheckCircle, BarChart3, Clock, TrendingUp, Play, GraduationCap, Timer, FolderOpen, Video } from "lucide-react";
 import { motion } from "framer-motion";
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
@@ -69,22 +69,47 @@ export default function Home() {
   const startedCoursesWatchedH = Math.floor(startedCoursesWatchedSeconds / 3600);
   const startedCoursesWatchedM = Math.floor((startedCoursesWatchedSeconds % 3600) / 60);
 
-  const dashboardCards = [
+  const totalCategories = categories?.length || 0;
+
+  // Content Statistics (general info about training content)
+  const contentStats = [
+    {
+      icon: FolderOpen,
+      label: lang === 'tr' ? "Kategori" : "Categories",
+      value: totalCategories,
+      color: "text-indigo-500",
+      bgColor: "bg-indigo-500/10",
+    },
     {
       icon: Book,
-      label: lang === 'tr' ? "Toplam Kurs" : "Total Courses",
+      label: lang === 'tr' ? "Kurs" : "Courses",
       value: totalCourses,
-      subtext: `/ ${totalCourses}`,
-      duration: formatDuration(totalDurationHours, totalDurationMinutes),
       color: "text-blue-500",
       bgColor: "bg-blue-500/10",
     },
+    {
+      icon: Video,
+      label: lang === 'tr' ? "Video" : "Videos",
+      value: totalVideos,
+      color: "text-purple-500",
+      bgColor: "bg-purple-500/10",
+    },
+    {
+      icon: Clock,
+      label: lang === 'tr' ? "Toplam Süre" : "Total Duration",
+      value: formatDuration(totalDurationHours, totalDurationMinutes),
+      color: "text-pink-500",
+      bgColor: "bg-pink-500/10",
+    },
+  ];
+
+  // Progress Statistics (user's personal progress)
+  const progressStats = [
     {
       icon: Target,
       label: lang === 'tr' ? "Başlanan Kurs" : "Courses Started",
       value: stats.startedCourses.length,
       subtext: `/ ${totalCourses}`,
-      duration: formatDuration(startedCoursesWatchedH, startedCoursesWatchedM),
       color: "text-orange-500",
       bgColor: "bg-orange-500/10",
     },
@@ -93,25 +118,14 @@ export default function Home() {
       label: lang === 'tr' ? "Tamamlanan Kurs" : "Courses Completed",
       value: completedCourseCount,
       subtext: `/ ${totalCourses}`,
-      duration: formatDuration(watchedHours, watchedMinutes),
       color: "text-green-500",
       bgColor: "bg-green-500/10",
-    },
-    {
-      icon: PlayCircle,
-      label: lang === 'tr' ? "Toplam Video" : "Total Videos",
-      value: totalVideos,
-      subtext: `/ ${totalVideos}`,
-      duration: formatDuration(totalDurationHours, totalDurationMinutes),
-      color: "text-purple-500",
-      bgColor: "bg-purple-500/10",
     },
     {
       icon: Layers,
       label: lang === 'tr' ? "Başlanan Video" : "Videos Started",
       value: stats.watchedCount,
       subtext: `/ ${totalVideos}`,
-      duration: formatDuration(watchedHours, watchedMinutes),
       color: "text-cyan-500",
       bgColor: "bg-cyan-500/10",
     },
@@ -120,7 +134,6 @@ export default function Home() {
       label: lang === 'tr' ? "Tamamlanan Video" : "Videos Completed",
       value: stats.completedCount,
       subtext: `/ ${totalVideos}`,
-      duration: formatDuration(watchedHours, watchedMinutes),
       color: "text-teal-500",
       bgColor: "bg-teal-500/10",
     },
@@ -129,7 +142,6 @@ export default function Home() {
       label: lang === 'tr' ? "İzleme Süresi" : "Watch Time",
       value: formatDuration(watchedHours, watchedMinutes),
       subtext: `/ ${formatDuration(totalDurationHours, totalDurationMinutes)}`,
-      duration: null,
       color: "text-pink-500",
       bgColor: "bg-pink-500/10",
     },
@@ -137,10 +149,43 @@ export default function Home() {
 
   return (
     <div className="max-w-7xl mx-auto space-y-12 pb-12">
-      {/* Dashboard Stats */}
+      {/* Content Statistics - General Training Info */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
+        className="space-y-4"
+      >
+        <div className="flex items-center justify-between gap-4 flex-wrap">
+          <h2 className="text-2xl font-bold text-foreground flex items-center gap-2">
+            <Book className="w-6 h-6 text-primary" />
+            {lang === 'tr' ? "Eğitim İçeriğimiz" : "Our Training Content"}
+          </h2>
+        </div>
+        
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          {contentStats.map((card, idx) => (
+            <Card key={idx} className="border-border/50">
+              <CardContent className="p-4">
+                <div className="flex items-center gap-3">
+                  <div className={`w-12 h-12 rounded-xl ${card.bgColor} ${card.color} flex items-center justify-center`}>
+                    <card.icon className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <p className="text-2xl font-bold" data-testid={`content-stat-${idx}`}>{card.value}</p>
+                    <p className="text-sm text-muted-foreground">{card.label}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </motion.div>
+
+      {/* Progress Statistics - User's Personal Progress */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.05 }}
         className="space-y-4"
       >
         <div className="flex items-center justify-between gap-4 flex-wrap">
@@ -150,8 +195,8 @@ export default function Home() {
           </h2>
         </div>
         
-        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
-          {dashboardCards.map((card, idx) => (
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+          {progressStats.map((card, idx) => (
             <Card key={idx} className="border-border/50">
               <CardContent className="p-3">
                 <div className="flex flex-col items-center text-center gap-1">
@@ -159,16 +204,10 @@ export default function Home() {
                     <card.icon className="w-5 h-5" />
                   </div>
                   <div className="flex items-baseline gap-1">
-                    <p className="text-xl font-bold" data-testid={`stat-value-${idx}`}>{card.value}</p>
-                    <span className="text-xs text-muted-foreground">{card.subtext}</span>
+                    <p className="text-xl font-bold" data-testid={`progress-stat-${idx}`}>{card.value}</p>
+                    {card.subtext && <span className="text-xs text-muted-foreground">{card.subtext}</span>}
                   </div>
                   <p className="text-[10px] text-muted-foreground leading-tight">{card.label}</p>
-                  {card.duration && (
-                    <p className="text-[9px] text-muted-foreground/70 flex items-center gap-0.5">
-                      <Clock className="w-2.5 h-2.5" />
-                      {card.duration}
-                    </p>
-                  )}
                 </div>
               </CardContent>
             </Card>
@@ -351,7 +390,15 @@ export default function Home() {
             animate="show"
             className="grid grid-cols-2 md:grid-cols-4 gap-4"
           >
-            {categories?.map((cat) => (
+            {categories?.map((cat) => {
+              const catCourses = courses?.filter(c => c.categoryId === cat.id) || [];
+              const catCourseCount = catCourses.length;
+              const catVideoCount = catCourses.reduce((sum, c) => sum + (c.totalVideos || 0), 0);
+              const catDurationSeconds = catVideoCount * 600;
+              const catDurationH = Math.floor(catDurationSeconds / 3600);
+              const catDurationM = Math.floor((catDurationSeconds % 3600) / 60);
+              
+              return (
               <motion.div key={cat.id} variants={item}>
                 <Link 
                   href={`/categories/${cat.slug}`}
@@ -361,11 +408,25 @@ export default function Home() {
                   <div className="w-12 h-12 rounded-xl bg-primary/10 text-primary flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300">
                     <Layers className="w-6 h-6" />
                   </div>
-                  <h3 className="font-semibold text-lg mb-1">{getLocalized(cat.title as { en: string; tr: string })}</h3>
-                  <div className="w-8 h-1 bg-border group-hover:bg-primary transition-colors rounded-full mt-2" />
+                  <h3 className="font-semibold text-lg mb-2">{getLocalized(cat.title as { en: string; tr: string })}</h3>
+                  <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground">
+                    <span className="flex items-center gap-1">
+                      <Book className="w-3 h-3" />
+                      {catCourseCount} {lang === 'tr' ? 'kurs' : 'courses'}
+                    </span>
+                    <span className="flex items-center gap-1">
+                      <Video className="w-3 h-3" />
+                      {catVideoCount} {lang === 'tr' ? 'video' : 'videos'}
+                    </span>
+                    <span className="flex items-center gap-1">
+                      <Clock className="w-3 h-3" />
+                      {formatDuration(catDurationH, catDurationM)}
+                    </span>
+                  </div>
                 </Link>
               </motion.div>
-            ))}
+              );
+            })}
           </motion.div>
         )}
       </div>
