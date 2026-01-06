@@ -2,7 +2,7 @@ import { useCourse, useCourseVideos, useCourseDocuments } from "@/hooks/use-api"
 import { useTranslation, useStore } from "@/hooks/use-store";
 import { useRoute, useLocation } from "wouter";
 import { useState, useEffect, useRef } from "react";
-import ReactPlayer from "react-player/youtube";
+import ReactPlayer from "react-player";
 import { CheckCircle2, Circle, FileText, Download, Play, Clock } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
@@ -94,12 +94,18 @@ export default function CourseDetail() {
     return !!progressData?.find((p: any) => p.videoId === vId)?.isCompleted;
   };
 
+  const handleVideoSelect = (vId: number) => {
+    setActiveVideoId(vId);
+    setIsReady(false);
+  };
+
   return (
     <div className="max-w-7xl mx-auto pb-12 h-[calc(100vh-5rem)] flex flex-col lg:flex-row gap-6">
       <div className="flex-1 flex flex-col min-h-0 overflow-y-auto pr-2">
         <div className="aspect-video bg-black rounded-2xl overflow-hidden shadow-2xl shadow-black/20 mb-6 shrink-0 relative">
           {activeVideo ? (
             <ReactPlayer
+              key={activeVideo.id}
               ref={playerRef}
               url={`https://www.youtube.com/watch?v=${activeVideo.youtubeId}`}
               width="100%"
@@ -213,7 +219,7 @@ export default function CourseDetail() {
             return (
               <button
                 key={video.id}
-                onClick={() => setActiveVideoId(video.id)}
+                onClick={() => handleVideoSelect(video.id)}
                 className={cn(
                   "w-full flex items-start gap-3 p-3 rounded-xl text-left transition-all duration-200 group relative",
                   isActive 
@@ -239,7 +245,7 @@ export default function CourseDetail() {
                       "text-sm font-medium leading-tight truncate mr-2",
                       isActive ? "text-primary-foreground" : "text-foreground group-hover:text-primary"
                     )}>
-                      {getLocalized(video.title)}
+                      {getLocalized(video.title as any)}
                     </p>
                     <span className={cn(
                       "text-[10px] font-mono",
