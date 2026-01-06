@@ -21,7 +21,8 @@ export default function CourseDetail() {
   const [activeVideoIndex, setActiveVideoIndex] = useState<number>(0);
   const [liveProgress, setLiveProgress] = useState<Record<number, number>>({});
 
-  const activeVideo = videos?.[activeVideoIndex];
+  const sortedVideos = videos ? [...videos].sort((a, b) => a.sequenceOrder - b.sequenceOrder) : [];
+  const activeVideo = sortedVideos[activeVideoIndex];
 
   const handleVideoProgress = useCallback((videoId: number, currentTime: number, duration: number, percent: number) => {
     setLiveProgress(prev => ({ ...prev, [videoId]: percent }));
@@ -43,12 +44,12 @@ export default function CourseDetail() {
     setActiveVideoIndex(newIndex);
   }, []);
 
-  const videoSources = videos?.sort((a, b) => a.sequenceOrder - b.sequenceOrder).map(v => ({
+  const videoSources = sortedVideos.map(v => ({
     id: v.id,
     youtubeId: v.youtubeId,
     title: typeof v.title === 'object' ? (v.title as any).en : v.title,
     duration: v.duration
-  })) || [];
+  }));
 
   const getInitialPosition = () => {
     if (!activeVideo || !course?.id) return 0;
@@ -56,13 +57,30 @@ export default function CourseDetail() {
     return videoProgress[key] || 0;
   };
 
-  // Calculate course durations
-  const totalDurationSeconds = videos?.reduce((sum, v) => sum + v.duration, 0) || 0;
-  const watchedDurationSeconds = videos?.reduce((sum, v) => {
+  const getProgress = (vId: number) => {
+    if (liveProgress[vId] !== undefined) {
+      return liveProgress[vId];
+    }
+    if (course?.id && isVideoComplete(course.id, vId)) return 100;
+    const video = sortedVideos.find(v => v.id === vId);
+    if (!video || !course?.id) return 0;
+    const key = `${course.id}-${vId}`;
+    const watched = videoProgress[key] || 0;
+    return Math.min(Math.round((watched / video.duration) * 100), 99);
+  };
+
+  const isVideoCompleted = (vId: number) => {
+    if (liveProgress[vId] === 100) return true;
+    return course?.id ? isVideoComplete(course.id, vId) : false;
+  };
+
+  const totalDurationSeconds = sortedVideos.reduce((sum, v) => sum + v.duration, 0);
+  const watchedDurationSeconds = sortedVideos.reduce((sum, v) => {
     if (!course?.id) return sum;
     const key = `${course.id}-${v.id}`;
-    return sum + (videoProgress[key] || 0);
-  }, 0) || 0;
+    const watched = videoProgress[key] || 0;
+    return sum + Math.min(watched, v.duration);
+  }, 0);
   const remainingDurationSeconds = Math.max(0, totalDurationSeconds - watchedDurationSeconds);
 
   const formatTime = (seconds: number) => {
@@ -74,12 +92,11 @@ export default function CourseDetail() {
     return h > 0 ? `${h}h ${m}m` : `${m}m`;
   };
 
-  // Export functions
   const exportToCSV = () => {
-    if (!videos || !course) return;
+    if (!sortedVideos.length || !course) return;
     
     const headers = ['Sıra', 'Video Başlığı', 'Süre', 'İzleme Durumu', 'Tamamlandı'];
-    const rows = videos.sort((a, b) => a.sequenceOrder - b.sequenceOrder).map((v, i) => {
+    const rows = sortedVideos.map((v, i) => {
       const completed = course?.id ? isVideoComplete(course.id, v.id) : false;
       const progress = getProgress(v.id);
       return [
@@ -102,16 +119,7 @@ export default function CourseDetail() {
   };
 
   const exportToPDF = () => {
-    if (!videos || !course) return;
-    
-    const content = videos.sort((a, b) => a.sequenceOrder - b.sequenceOrder).map((v, i) => {
-      const completed = course?.id ? isVideoComplete(course.id, v.id) : false;
-      const progress = getProgress(v.id);
-      const duration = `${Math.floor(v.duration / 60)}:${(v.duration % 60).toString().padStart(2, '0')}`;
-      return `${i + 1}. ${getLocalized(v.title as any)} - ${duration} - %${progress} ${completed ? '(Tamamlandı)' : ''}`;
-    }).join('\n');
-
-    const header = `${getLocalized(course.title as any)}\n\nToplam: ${videos.length} video | Süre: ${formatTime(totalDurationSeconds)} | İzlenen: ${formatTime(watchedDurationSeconds)} | Kalan: ${formatTime(remainingDurationSeconds)}\n\n`;
+    if (!sortedVideos.length || !course) return;
     
     const printWindow = window.open('', '_blank');
     if (printWindow) {
@@ -130,12 +138,12 @@ export default function CourseDetail() {
           <body>
             <h1>${getLocalized(course.title as any)}</h1>
             <div class="info">
-              <strong>Toplam:</strong> ${videos.length} video | 
+              <strong>Toplam:</strong> ${sortedVideos.length} video | 
               <strong>Süre:</strong> ${formatTime(totalDurationSeconds)} | 
               <strong>İzlenen:</strong> ${formatTime(watchedDurationSeconds)} | 
               <strong>Kalan:</strong> ${formatTime(remainingDurationSeconds)}
             </div>
-            ${videos.sort((a, b) => a.sequenceOrder - b.sequenceOrder).map((v, i) => {
+            ${sortedVideos.map((v, i) => {
               const completed = course?.id ? isVideoComplete(course.id, v.id) : false;
               const progress = getProgress(v.id);
               const duration = `${Math.floor(v.duration / 60)}:${(v.duration % 60).toString().padStart(2, '0')}`;
@@ -166,25 +174,7 @@ export default function CourseDetail() {
 
   if (!course) return <div className="p-12 text-center text-muted-foreground">Kurs bulunamadi</div>;
 
-  const getProgress = (vId: number) => {
-    if (liveProgress[vId] !== undefined) {
-      return liveProgress[vId];
-    }
-    if (course?.id && isVideoComplete(course.id, vId)) return 100;
-    const video = videos?.find(v => v.id === vId);
-    if (!video || !course?.id) return 0;
-    const key = `${course.id}-${vId}`;
-    const watched = videoProgress[key] || 0;
-    return Math.min(Math.round((watched / video.duration) * 100), 99);
-  };
-
-  const isVideoCompleted = (vId: number) => {
-    if (liveProgress[vId] === 100) return true;
-    return course?.id ? isVideoComplete(course.id, vId) : false;
-  };
-
   const handleVideoSelect = (vId: number) => {
-    const sortedVideos = videos?.sort((a, b) => a.sequenceOrder - b.sequenceOrder) || [];
     const index = sortedVideos.findIndex(v => v.id === vId);
     if (index !== -1) {
       setActiveVideoIndex(index);
@@ -280,12 +270,12 @@ export default function CourseDetail() {
             </div>
           </div>
           <p className="text-xs text-muted-foreground">
-            {videos?.filter(v => isVideoCompleted(v.id)).length} / {videos?.length} {t.completed}
+            {sortedVideos.filter(v => isVideoCompleted(v.id)).length} / {sortedVideos.length} {t.completed}
           </p>
           <div className="h-1 w-full bg-border rounded-full mt-2 overflow-hidden">
             <div 
               className="h-full bg-primary transition-all duration-500"
-              style={{ width: `${(videos?.filter(v => isVideoCompleted(v.id)).length || 0) / (videos?.length || 1) * 100}%` }}
+              style={{ width: `${(sortedVideos.filter(v => isVideoCompleted(v.id)).length || 0) / (sortedVideos.length || 1) * 100}%` }}
             />
           </div>
           <div className="flex flex-wrap gap-x-3 gap-y-1 mt-3 text-[10px] text-muted-foreground">
@@ -305,7 +295,7 @@ export default function CourseDetail() {
         </div>
 
         <div className="flex-1 overflow-y-auto p-2 space-y-1 custom-scrollbar">
-          {videos?.sort((a,b) => a.sequenceOrder - b.sequenceOrder).map((video, index) => {
+          {sortedVideos.map((video, index) => {
             const isActive = activeVideo?.id === video.id;
             const isCompleted = isVideoCompleted(video.id);
             const progress = getProgress(video.id);
