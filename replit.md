@@ -87,15 +87,27 @@ CSS variables define the color palette in `client/src/index.css` with separate `
 ### Video Player Component
 - **Location:** `client/src/components/VideoPlayer.tsx`
 - **Features:**
-  - YouTube iframe embedding with youtube-nocookie.com for privacy
+  - YouTube iframe embedding with CSS trick to hide branding (300% width container)
   - Real-time progress tracking using simulated intervals (updates every second)
   - Initial position support for resuming playback
-  - Progress saved to database every 10 seconds
+  - Progress saved to localStorage via Zustand store
   - Auto-completion at 90% watch threshold
   - Auto-advance to next video on completion
   - Memory leak prevention with proper cleanup
-- **Styling:** Custom CSS theme in `client/src/index.css` (.video-player-wrapper, .youtube-container)
+- **Styling:** Custom CSS classes in `client/src/index.css` (.yt-wrapper, .yt-frame-container, .yt-iframe)
 - **Note:** Video.js + videojs-youtube attempted but YouTube embed restrictions prevent full integration
+
+### Dashboard & Progress Tracking
+- **Location:** Home page (`client/src/pages/Home.tsx`)
+- **Storage:** localStorage via Zustand persist (no database needed)
+- **Metrics Displayed:**
+  - Total Courses count
+  - Total Videos count
+  - Videos Started count (unique videos user has begun watching)
+  - Videos Completed count (videos watched to 90%+)
+  - Success Rate percentage with progress bar
+  - Courses Started count
+- **Store Functions:** `markVideoWatched()`, `markVideoComplete()`, `getStats()`, `getCourseProgress()`
 
 ### Fonts
 - **Google Fonts** - Inter (body), Outfit (display), loaded via CDN

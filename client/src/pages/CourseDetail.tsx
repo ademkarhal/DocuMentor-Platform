@@ -13,6 +13,7 @@ export default function CourseDetail() {
   const slug = params?.slug || "";
   
   const { t, getLocalized } = useTranslation();
+  const { markVideoComplete, markVideoWatched } = useStore();
   
   const { data: course, isLoading: courseLoading } = useCourse(slug);
   const { data: videos, isLoading: videosLoading } = useCourseVideos(course?.id);
@@ -49,20 +50,25 @@ export default function CourseDetail() {
   const handleVideoProgress = useCallback((videoId: number, currentTime: number, duration: number, percent: number) => {
     setLiveProgress(prev => ({ ...prev, [videoId]: percent }));
     
+    if (course?.id) {
+      markVideoWatched(course.id, videoId);
+    }
+    
     const now = Date.now();
     if (now - lastSaveTimeRef.current >= 10000) {
       lastSaveTimeRef.current = now;
       saveProgress(videoId, currentTime, duration);
     }
-  }, [saveProgress]);
+  }, [saveProgress, course?.id, markVideoWatched]);
 
   const handleVideoComplete = useCallback((videoId: number) => {
     setLiveProgress(prev => ({ ...prev, [videoId]: 100 }));
     const video = videos?.find(v => v.id === videoId);
-    if (video) {
+    if (video && course?.id) {
       saveProgress(videoId, video.duration, video.duration, true);
+      markVideoComplete(course.id, videoId);
     }
-  }, [saveProgress, videos]);
+  }, [saveProgress, videos, course?.id, markVideoComplete]);
 
   const handleVideoChange = useCallback((newIndex: number) => {
     setActiveVideoIndex(newIndex);
