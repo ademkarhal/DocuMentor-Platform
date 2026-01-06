@@ -1,4 +1,6 @@
 import { fetchPlaylistVideos, getPlaylistInfo } from "./youtube";
+import * as fs from "fs";
+import * as path from "path";
 
 interface BilingualText {
   en: string;
@@ -42,6 +44,15 @@ export interface Document {
 }
 
 const FLUTTER_PLAYLIST_ID = "PLQVXoXFVVtp1DFmoTL4cPTWEWiqndKexZ";
+const CACHE_FILE = "/tmp/youtube_cache.json";
+const CACHE_DURATION = 24 * 60 * 60 * 1000; // 24 hours
+
+interface CacheData {
+  timestamp: number;
+  categories: Category[];
+  courses: Course[];
+  videos: Video[];
+}
 
 class MemoryStorage {
   private categories: Category[] = [];
@@ -55,13 +66,62 @@ class MemoryStorage {
     if (this.initialized) return;
     if (this.initPromise) return this.initPromise;
 
-    this.initPromise = this.seedFromYouTube();
+    this.initPromise = this.loadData();
     await this.initPromise;
     this.initialized = true;
   }
 
-  private async seedFromYouTube(): Promise<void> {
-    console.log("Loading data from YouTube playlists...");
+  private loadFromCache(): CacheData | null {
+    try {
+      if (!fs.existsSync(CACHE_FILE)) return null;
+      
+      const content = fs.readFileSync(CACHE_FILE, 'utf-8');
+      const data = JSON.parse(content) as CacheData;
+      
+      if (Date.now() - data.timestamp > CACHE_DURATION) {
+        console.log("Cache expired, will fetch fresh data");
+        return null;
+      }
+      
+      console.log("Loading data from cache...");
+      return data;
+    } catch (e) {
+      console.log("Cache read error, will fetch fresh data");
+      return null;
+    }
+  }
+
+  private saveToCache(): void {
+    try {
+      const data: CacheData = {
+        timestamp: Date.now(),
+        categories: this.categories,
+        courses: this.courses,
+        videos: this.videos
+      };
+      fs.writeFileSync(CACHE_FILE, JSON.stringify(data));
+      console.log("Data saved to cache");
+    } catch (e) {
+      console.log("Cache write error:", e);
+    }
+  }
+
+  private async loadData(): Promise<void> {
+    const cached = this.loadFromCache();
+    
+    if (cached) {
+      this.categories = cached.categories;
+      this.courses = cached.courses;
+      this.videos = cached.videos;
+      console.log(`Loaded from cache: ${this.courses.length} courses, ${this.videos.length} videos`);
+      return;
+    }
+
+    await this.fetchFromYouTube();
+  }
+
+  private async fetchFromYouTube(): Promise<void> {
+    console.log("Fetching data from YouTube...");
 
     this.categories.push({
       id: 1,
@@ -103,10 +163,9 @@ class MemoryStorage {
         });
       });
 
-      console.log(`Loaded ${playlistVideos.length} videos from YouTube`);
+      console.log(`Fetched ${playlistVideos.length} videos from YouTube`);
+      this.saveToCache();
     }
-
-    console.log("Data loading completed!");
   }
 
   async getCategories(): Promise<Category[]> {

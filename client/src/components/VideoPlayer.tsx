@@ -106,6 +106,20 @@ export default function VideoPlayer({
     }
   }, []);
 
+  const onProgressRef = useRef(onProgress);
+  const onCompleteRef = useRef(onComplete);
+  const onVideoChangeRef = useRef(onVideoChange);
+  const activeIndexRef = useRef(activeIndex);
+  const sourcesLengthRef = useRef(sources.length);
+
+  useEffect(() => {
+    onProgressRef.current = onProgress;
+    onCompleteRef.current = onComplete;
+    onVideoChangeRef.current = onVideoChange;
+    activeIndexRef.current = activeIndex;
+    sourcesLengthRef.current = sources.length;
+  }, [onProgress, onComplete, onVideoChange, activeIndex, sources.length]);
+
   const startProgressTracking = useCallback(() => {
     if (!activeSource || !playerRef.current) return;
     
@@ -135,22 +149,22 @@ export default function VideoPlayer({
         if (duration > 0 && !isNaN(currentTime) && !isNaN(duration)) {
           const percent = Math.min(Math.round((currentTime / duration) * 100), 100);
           
-          if (onProgress) {
-            onProgress(source.id, currentTime, duration, percent);
+          if (onProgressRef.current) {
+            onProgressRef.current(source.id, currentTime, duration, percent);
           }
 
           if (percent >= 90 && !hasCompletedRef.current) {
             hasCompletedRef.current = true;
-            if (onComplete) {
-              onComplete(source.id);
+            if (onCompleteRef.current) {
+              onCompleteRef.current(source.id);
             }
           }
 
           if (currentTime >= duration - 1) {
             clearProgressInterval();
             
-            if (activeIndex < sources.length - 1 && onVideoChange) {
-              setTimeout(() => onVideoChange(activeIndex + 1), 1500);
+            if (activeIndexRef.current < sourcesLengthRef.current - 1 && onVideoChangeRef.current) {
+              setTimeout(() => onVideoChangeRef.current!(activeIndexRef.current + 1), 1500);
             }
           }
         }
@@ -158,7 +172,7 @@ export default function VideoPlayer({
         // Player not ready or destroyed
       }
     }, 1000);
-  }, [activeSource, onProgress, onComplete, onVideoChange, activeIndex, sources.length, clearProgressInterval]);
+  }, [activeSource, clearProgressInterval]);
 
   useEffect(() => {
     if (!activeSource) return;
@@ -219,7 +233,7 @@ export default function VideoPlayer({
         playerRef.current = null;
       }
     };
-  }, [activeSource?.id, initialPosition, startProgressTracking, clearProgressInterval]);
+  }, [activeSource?.id, initialPosition, clearProgressInterval]);
 
   if (!activeSource) {
     return (

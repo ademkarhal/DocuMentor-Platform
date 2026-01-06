@@ -1,74 +1,43 @@
 import { useCourse, useCourseVideos, useCourseDocuments } from "@/hooks/use-api";
 import { useTranslation, useStore } from "@/hooks/use-store";
 import { useRoute } from "wouter";
-import { useState, useEffect, useRef, useCallback } from "react";
-import { CheckCircle2, FileText, Download, Play, Clock } from "lucide-react";
+import { useState, useCallback } from "react";
+import { CheckCircle2, FileText, Download, Play, Clock, Timer, Hourglass, FileSpreadsheet, FileDown } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { apiRequest, queryClient } from "@/lib/queryClient";
-import { useQuery } from "@tanstack/react-query";
 import VideoPlayer from "@/components/VideoPlayer";
+import { Button } from "@/components/ui/button";
 
 export default function CourseDetail() {
   const [, params] = useRoute("/courses/:slug");
   const slug = params?.slug || "";
   
-  const { t, getLocalized } = useTranslation();
-  const { markVideoComplete, markVideoWatched } = useStore();
+  const { t, getLocalized, lang } = useTranslation();
+  const { markVideoComplete, markVideoWatched, setVideoProgress, videoProgress, isVideoComplete } = useStore();
   
   const { data: course, isLoading: courseLoading } = useCourse(slug);
   const { data: videos, isLoading: videosLoading } = useCourseVideos(course?.id);
   const { data: documents } = useCourseDocuments(course?.id);
-  
-  const { data: progressData } = useQuery<any[]>({
-    queryKey: [`/api/courses/${course?.id}/progress`],
-    enabled: !!course?.id,
-  });
 
   const [activeVideoIndex, setActiveVideoIndex] = useState<number>(0);
   const [liveProgress, setLiveProgress] = useState<Record<number, number>>({});
-  const lastSaveTimeRef = useRef<number>(0);
 
   const activeVideo = videos?.[activeVideoIndex];
-
-  const saveProgress = useCallback(async (videoId: number, position: number, duration: number, forceComplete = false) => {
-    if (!course?.id) return;
-    
-    const isCompleted = forceComplete || position / duration >= 0.9;
-    try {
-      await apiRequest("POST", "/api/progress", {
-        courseId: course.id,
-        videoId,
-        lastPosition: Math.floor(position),
-        isCompleted
-      });
-      if (isCompleted) {
-        queryClient.invalidateQueries({ queryKey: [`/api/courses/${course.id}/progress`] });
-      }
-    } catch (e) {}
-  }, [course?.id]);
 
   const handleVideoProgress = useCallback((videoId: number, currentTime: number, duration: number, percent: number) => {
     setLiveProgress(prev => ({ ...prev, [videoId]: percent }));
     
     if (course?.id) {
       markVideoWatched(course.id, videoId);
+      setVideoProgress(course.id, videoId, currentTime);
     }
-    
-    const now = Date.now();
-    if (now - lastSaveTimeRef.current >= 10000) {
-      lastSaveTimeRef.current = now;
-      saveProgress(videoId, currentTime, duration);
-    }
-  }, [saveProgress, course?.id, markVideoWatched]);
+  }, [course?.id, markVideoWatched, setVideoProgress]);
 
   const handleVideoComplete = useCallback((videoId: number) => {
     setLiveProgress(prev => ({ ...prev, [videoId]: 100 }));
-    const video = videos?.find(v => v.id === videoId);
-    if (video && course?.id) {
-      saveProgress(videoId, video.duration, video.duration, true);
+    if (course?.id) {
       markVideoComplete(course.id, videoId);
     }
-  }, [saveProgress, videos, course?.id, markVideoComplete]);
+  }, [course?.id, markVideoComplete]);
 
   const handleVideoChange = useCallback((newIndex: number) => {
     setActiveVideoIndex(newIndex);
@@ -82,9 +51,102 @@ export default function CourseDetail() {
   })) || [];
 
   const getInitialPosition = () => {
-    if (!activeVideo) return 0;
-    const p = progressData?.find((p: any) => p.videoId === activeVideo.id);
-    return p?.lastPosition || 0;
+    if (!activeVideo || !course?.id) return 0;
+    const key = `${course.id}-${activeVideo.id}`;
+    return videoProgress[key] || 0;
+  };
+
+  // Calculate course durations
+  const totalDurationSeconds = videos?.reduce((sum, v) => sum + v.duration, 0) || 0;
+  const watchedDurationSeconds = videos?.reduce((sum, v) => {
+    if (!course?.id) return sum;
+    const key = `${course.id}-${v.id}`;
+    return sum + (videoProgress[key] || 0);
+  }, 0) || 0;
+  const remainingDurationSeconds = Math.max(0, totalDurationSeconds - watchedDurationSeconds);
+
+  const formatTime = (seconds: number) => {
+    const h = Math.floor(seconds / 3600);
+    const m = Math.floor((seconds % 3600) / 60);
+    if (lang === 'tr') {
+      return h > 0 ? `${h}s ${m}dk` : `${m}dk`;
+    }
+    return h > 0 ? `${h}h ${m}m` : `${m}m`;
+  };
+
+  // Export functions
+  const exportToCSV = () => {
+    if (!videos || !course) return;
+    
+    const headers = ['Sıra', 'Video Başlığı', 'Süre', 'İzleme Durumu', 'Tamamlandı'];
+    const rows = videos.sort((a, b) => a.sequenceOrder - b.sequenceOrder).map((v, i) => {
+      const completed = course?.id ? isVideoComplete(course.id, v.id) : false;
+      const progress = getProgress(v.id);
+      return [
+        i + 1,
+        `"${getLocalized(v.title as any)}"`,
+        `${Math.floor(v.duration / 60)}:${(v.duration % 60).toString().padStart(2, '0')}`,
+        `${progress}%`,
+        completed ? 'Evet' : 'Hayır'
+      ].join(',');
+    });
+    
+    const csv = [headers.join(','), ...rows].join('\n');
+    const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${course.slug}-kurs-icerigi.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const exportToPDF = () => {
+    if (!videos || !course) return;
+    
+    const content = videos.sort((a, b) => a.sequenceOrder - b.sequenceOrder).map((v, i) => {
+      const completed = course?.id ? isVideoComplete(course.id, v.id) : false;
+      const progress = getProgress(v.id);
+      const duration = `${Math.floor(v.duration / 60)}:${(v.duration % 60).toString().padStart(2, '0')}`;
+      return `${i + 1}. ${getLocalized(v.title as any)} - ${duration} - %${progress} ${completed ? '(Tamamlandı)' : ''}`;
+    }).join('\n');
+
+    const header = `${getLocalized(course.title as any)}\n\nToplam: ${videos.length} video | Süre: ${formatTime(totalDurationSeconds)} | İzlenen: ${formatTime(watchedDurationSeconds)} | Kalan: ${formatTime(remainingDurationSeconds)}\n\n`;
+    
+    const printWindow = window.open('', '_blank');
+    if (printWindow) {
+      printWindow.document.write(`
+        <html>
+          <head>
+            <title>${getLocalized(course.title as any)}</title>
+            <style>
+              body { font-family: Arial, sans-serif; padding: 40px; line-height: 1.6; }
+              h1 { color: #1a365d; border-bottom: 2px solid #1a365d; padding-bottom: 10px; }
+              .info { background: #f0f4f8; padding: 15px; border-radius: 8px; margin-bottom: 20px; }
+              .video { padding: 8px 0; border-bottom: 1px solid #e2e8f0; }
+              .completed { color: #38a169; }
+            </style>
+          </head>
+          <body>
+            <h1>${getLocalized(course.title as any)}</h1>
+            <div class="info">
+              <strong>Toplam:</strong> ${videos.length} video | 
+              <strong>Süre:</strong> ${formatTime(totalDurationSeconds)} | 
+              <strong>İzlenen:</strong> ${formatTime(watchedDurationSeconds)} | 
+              <strong>Kalan:</strong> ${formatTime(remainingDurationSeconds)}
+            </div>
+            ${videos.sort((a, b) => a.sequenceOrder - b.sequenceOrder).map((v, i) => {
+              const completed = course?.id ? isVideoComplete(course.id, v.id) : false;
+              const progress = getProgress(v.id);
+              const duration = `${Math.floor(v.duration / 60)}:${(v.duration % 60).toString().padStart(2, '0')}`;
+              return `<div class="video ${completed ? 'completed' : ''}">${i + 1}. ${getLocalized(v.title as any)} - ${duration} - %${progress} ${completed ? '<strong>(Tamamlandı)</strong>' : ''}</div>`;
+            }).join('')}
+          </body>
+        </html>
+      `);
+      printWindow.document.close();
+      printWindow.print();
+    }
   };
 
   if (courseLoading || videosLoading) {
@@ -108,16 +170,17 @@ export default function CourseDetail() {
     if (liveProgress[vId] !== undefined) {
       return liveProgress[vId];
     }
-    const p = progressData?.find((p: any) => p.videoId === vId);
-    if (p?.isCompleted) return 100;
+    if (course?.id && isVideoComplete(course.id, vId)) return 100;
     const video = videos?.find(v => v.id === vId);
-    if (!p || !video) return 0;
-    return Math.min(Math.round((p.lastPosition / video.duration) * 100), 99);
+    if (!video || !course?.id) return 0;
+    const key = `${course.id}-${vId}`;
+    const watched = videoProgress[key] || 0;
+    return Math.min(Math.round((watched / video.duration) * 100), 99);
   };
 
   const isVideoCompleted = (vId: number) => {
     if (liveProgress[vId] === 100) return true;
-    return !!progressData?.find((p: any) => p.videoId === vId)?.isCompleted;
+    return course?.id ? isVideoComplete(course.id, vId) : false;
   };
 
   const handleVideoSelect = (vId: number) => {
@@ -205,15 +268,39 @@ export default function CourseDetail() {
 
       <div className="w-full lg:w-96 bg-card border border-border rounded-2xl flex flex-col h-[calc(100vh-7rem)] sticky top-24 shadow-xl shadow-black/5">
         <div className="p-4 border-b border-border bg-muted/20 rounded-t-2xl">
-          <h2 className="font-bold text-lg">{t.courseContent}</h2>
-          <p className="text-xs text-muted-foreground mt-1">
+          <div className="flex items-center justify-between gap-2 mb-2">
+            <h2 className="font-bold text-lg">{t.courseContent}</h2>
+            <div className="flex gap-1">
+              <Button size="icon" variant="ghost" onClick={exportToCSV} title="Excel/CSV" data-testid="button-export-csv">
+                <FileSpreadsheet className="w-4 h-4" />
+              </Button>
+              <Button size="icon" variant="ghost" onClick={exportToPDF} title="PDF" data-testid="button-export-pdf">
+                <FileDown className="w-4 h-4" />
+              </Button>
+            </div>
+          </div>
+          <p className="text-xs text-muted-foreground">
             {videos?.filter(v => isVideoCompleted(v.id)).length} / {videos?.length} {t.completed}
           </p>
-          <div className="h-1 w-full bg-border rounded-full mt-3 overflow-hidden">
+          <div className="h-1 w-full bg-border rounded-full mt-2 overflow-hidden">
             <div 
               className="h-full bg-primary transition-all duration-500"
               style={{ width: `${(videos?.filter(v => isVideoCompleted(v.id)).length || 0) / (videos?.length || 1) * 100}%` }}
             />
+          </div>
+          <div className="flex flex-wrap gap-x-3 gap-y-1 mt-3 text-[10px] text-muted-foreground">
+            <span className="flex items-center gap-1">
+              <Clock className="w-3 h-3" />
+              {lang === 'tr' ? 'Toplam:' : 'Total:'} {formatTime(totalDurationSeconds)}
+            </span>
+            <span className="flex items-center gap-1">
+              <Timer className="w-3 h-3 text-green-500" />
+              {lang === 'tr' ? 'İzlenen:' : 'Watched:'} {formatTime(watchedDurationSeconds)}
+            </span>
+            <span className="flex items-center gap-1">
+              <Hourglass className="w-3 h-3 text-orange-500" />
+              {lang === 'tr' ? 'Kalan:' : 'Remaining:'} {formatTime(remainingDurationSeconds)}
+            </span>
           </div>
         </div>
 
