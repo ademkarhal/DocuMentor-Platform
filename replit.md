@@ -84,6 +84,19 @@ CSS variables define the color palette in `client/src/index.css` with separate `
 ### Video Hosting
 - **YouTube** - All course videos hosted externally, embedded via iframe/player
 
+### Video Player Component
+- **Location:** `client/src/components/VideoPlayer.tsx`
+- **Features:**
+  - YouTube iframe embedding with youtube-nocookie.com for privacy
+  - Real-time progress tracking using simulated intervals (updates every second)
+  - Initial position support for resuming playback
+  - Progress saved to database every 10 seconds
+  - Auto-completion at 90% watch threshold
+  - Auto-advance to next video on completion
+  - Memory leak prevention with proper cleanup
+- **Styling:** Custom CSS theme in `client/src/index.css` (.video-player-wrapper, .youtube-container)
+- **Note:** Video.js + videojs-youtube attempted but YouTube embed restrictions prevent full integration
+
 ### Fonts
 - **Google Fonts** - Inter (body), Outfit (display), loaded via CDN
 
