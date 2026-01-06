@@ -108,16 +108,18 @@ export default function VideoPlayer({
   }
 
   return (
-    <div className={`aspect-video bg-gradient-to-br from-slate-900 to-slate-800 rounded-2xl overflow-hidden shadow-2xl shadow-black/30 ${className}`}>
-      <iframe
-        key={activeSource.id}
-        src={`https://www.youtube-nocookie.com/embed/${activeSource.youtubeId}?autoplay=1&rel=0&modestbranding=1&showinfo=0&iv_load_policy=3&start=${Math.floor(initialPosition)}`}
-        className="w-full h-full"
-        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-        allowFullScreen
-        title={activeSource.title}
-        data-testid="video-player"
-      />
+    <div className={`yt-wrapper ${className}`}>
+      <div className="yt-frame-container">
+        <iframe
+          key={activeSource.id}
+          src={`https://www.youtube.com/embed/${activeSource.youtubeId}?autoplay=1&rel=0&modestbranding=1&iv_load_policy=3&enablejsapi=1&origin=${encodeURIComponent(window.location.origin)}&start=${Math.floor(initialPosition)}`}
+          className="yt-iframe"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+          allowFullScreen
+          title={activeSource.title}
+          data-testid="video-player"
+        />
+      </div>
     </div>
   );
 }
