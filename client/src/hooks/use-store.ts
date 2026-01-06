@@ -10,6 +10,8 @@ interface AppState {
   theme: Theme;
   toggleTheme: () => void;
   completedVideos: Record<string, boolean>; // key: courseId-videoId
+  videoProgress: Record<string, number>; // key: courseId-videoId, value: currentTime in seconds
+  setVideoProgress: (courseId: number, videoId: number, currentTime: number) => void;
   markVideoComplete: (courseId: number, videoId: number) => void;
   isVideoComplete: (courseId: number, videoId: number) => boolean;
 }
@@ -30,6 +32,10 @@ export const useStore = create<AppState>()(
         }
       },
       completedVideos: {},
+      videoProgress: {},
+      setVideoProgress: (courseId, videoId, currentTime) => set((state) => ({
+        videoProgress: { ...state.videoProgress, [`${courseId}-${videoId}`]: currentTime }
+      })),
       markVideoComplete: (courseId, videoId) => set((state) => ({
         completedVideos: { ...state.completedVideos, [`${courseId}-${videoId}`]: true }
       })),

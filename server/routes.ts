@@ -110,76 +110,60 @@ async function seedDatabase() {
   // Course 2: Advanced Node.js
   const course2 = await storage.createCourse({
     categoryId: cat1.id,
-    slug: "advanced-nodejs",
-    title: { tr: "İleri Seviye Node.js", en: "Advanced Node.js" },
-    description: { tr: "Microservisler ve Ölçeklenebilir Sistemler", en: "Microservices and Scalable Systems" },
-    thumbnail: "https://upload.wikimedia.org/wikipedia/commons/thumb/d/d9/Node.js_logo.svg/1200px-Node.js_logo.svg.png",
-    totalVideos: 2,
-    nextcloudShareUrl: "https://nextcloud.example.com/s/nodejs-files"
+    slug: "modern-web-development",
+    title: { tr: "Modern Web Geliştirme (Full Stack)", en: "Modern Web Development (Full Stack)" },
+    description: { tr: "Sıfırdan ileri seviye web geliştirme", en: "Full stack web development from scratch" },
+    thumbnail: "https://images.unsplash.com/photo-1587620962725-abab7fe55159?w=800&q=80",
+    totalVideos: 5,
+    nextcloudShareUrl: "https://nextcloud.example.com/s/webdev-files"
   });
 
-  await storage.createVideo({
-    courseId: course2.id,
-    title: { tr: "Node.js Mimarisi", en: "Node.js Architecture" },
-    description: { tr: "Event Loop ve Non-blocking I/O", en: "Event Loop and Non-blocking I/O" },
-    youtubeId: "M3qHa0MuRcs", // Node.js Crash Course
-    duration: 1200,
-    sequenceOrder: 1,
-    transcript: "Node.js runs on the V8 engine and uses an event-driven..."
-  });
+  const webDevVideos = [
+    { youtubeId: "wSDZyaLlCeo", title: { tr: "Web Geliştirme Giriş", en: "Web Dev Intro" }, duration: 1200 },
+    { youtubeId: "8u8W4U9y6QA", title: { tr: "HTML & CSS Temelleri", en: "HTML & CSS Basics" }, duration: 1500 },
+    { youtubeId: "f02pL7n-5tU", title: { tr: "JavaScript'e Giriş", en: "Introduction to JavaScript" }, duration: 1800 },
+    { youtubeId: "vLnH9M-nIqc", title: { tr: "React Temelleri", en: "React Fundamentals" }, duration: 2000 },
+    { youtubeId: "mH_iHwL3X6M", title: { tr: "Node.js Giriş", en: "Introduction to Node.js" }, duration: 1600 }
+  ];
 
-  await storage.createVideo({
-    courseId: course2.id,
-    title: { tr: "Microservisler ile Çalışmak", en: "Working with Microservices" },
-    description: { tr: "Servisler arası iletişim", en: "Inter-service communication" },
-    youtubeId: "y8IT-B77NJ0", // Microservices video
-    duration: 1500,
-    sequenceOrder: 2,
-    transcript: "Microservices architecture allows you to scale..."
-  });
-
-  await storage.createDocument({
-    courseId: course2.id,
-    title: { tr: "Kod Örnekleri - ZIP", en: "Code Samples - ZIP" },
-    fileUrl: "https://nextcloud.example.com/s/nodejs-files/download",
-    fileType: "zip"
-  });
+  for (let i = 0; i < webDevVideos.length; i++) {
+    await storage.createVideo({
+      courseId: course2.id,
+      title: webDevVideos[i].title,
+      description: { tr: "Detaylı eğitim içeriği", en: "Detailed tutorial content" },
+      youtubeId: webDevVideos[i].youtubeId,
+      duration: webDevVideos[i].duration,
+      sequenceOrder: i + 1
+    });
+  }
 
   // Course 3: Python for Beginners
   const course3 = await storage.createCourse({
     categoryId: cat1.id,
-    slug: "python-beginners",
-    title: { tr: "Sıfırdan Python Programlama", en: "Python Programming from Scratch" },
-    description: { tr: "Python ile programlamaya giriş", en: "Introduction to programming with Python" },
-    thumbnail: "https://upload.wikimedia.org/wikipedia/commons/thumb/c/c3/Python-logo-notext.svg/1200px-Python-logo-notext.svg.png",
-    totalVideos: 2,
-    nextcloudShareUrl: "https://nextcloud.example.com/s/python-files"
+    slug: "mobile-app-development",
+    title: { tr: "Mobil Uygulama Geliştirme (Flutter)", en: "Mobile App Development (Flutter)" },
+    description: { tr: "Sıfırdan Flutter ile mobil uygulamalar", en: "Mobile apps with Flutter from scratch" },
+    thumbnail: "https://images.unsplash.com/photo-1512941937669-90a1b58e7e9c?w=800&q=80",
+    totalVideos: 5,
+    nextcloudShareUrl: "https://nextcloud.example.com/s/flutter-files"
   });
 
-  await storage.createVideo({
-    courseId: course3.id,
-    title: { tr: "Python Kurulumu ve İlk Kod", en: "Python Setup and First Code" },
-    description: { tr: "Python ortamını hazırlama", en: "Setting up Python environment" },
-    youtubeId: "_uQrJ0TkZlc", // Python tutorial
-    duration: 900,
-    sequenceOrder: 1,
-    transcript: "Python is a popular programming language..."
-  });
+  const flutterVideos = [
+    { youtubeId: "m14P_UQvrug", title: { tr: "Flutter'a Giriş", en: "Introduction to Flutter" }, duration: 1100 },
+    { youtubeId: "x0uinJ5DX3c", title: { tr: "Dart Programlama Dili", en: "Dart Programming Language" }, duration: 1400 },
+    { youtubeId: "GLSG_Wh_YWc", title: { tr: "Widget Yapısı", en: "Widget Structure" }, duration: 1300 },
+    { youtubeId: "jx_yLqP3Xm8", title: { tr: "State Management", en: "State Management" }, duration: 1700 },
+    { youtubeId: "ZpP9o4-u2E4", title: { tr: "API Entegrasyonu", en: "API Integration" }, duration: 1900 }
+  ];
 
-  await storage.createVideo({
-    courseId: course3.id,
-    title: { tr: "Değişkenler ve Veri Tipleri", en: "Variables and Data Types" },
-    description: { tr: "Python'da temel yapılar", en: "Basic structures in Python" },
-    youtubeId: "rfscVS0vtbw", // FreeCodeCamp Python
-    duration: 1100,
-    sequenceOrder: 2,
-    transcript: "Variables are used to store data values..."
-  });
-
-  await storage.createDocument({
-    courseId: course3.id,
-    title: { tr: "Python Hile Sayfası - PDF", en: "Python Cheat Sheet - PDF" },
-    fileUrl: "https://nextcloud.example.com/s/python-files/cheatsheet",
-    fileType: "pdf"
-  });
+  for (let i = 0; i < flutterVideos.length; i++) {
+    await storage.createVideo({
+      courseId: course3.id,
+      title: flutterVideos[i].title,
+      description: { tr: "Flutter ile geliştirme", en: "Development with Flutter" },
+      youtubeId: flutterVideos[i].youtubeId,
+      duration: flutterVideos[i].duration,
+      sequenceOrder: i + 1
+    });
+  }
 }

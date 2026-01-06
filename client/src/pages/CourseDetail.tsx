@@ -13,7 +13,7 @@ export default function CourseDetail() {
   const slug = params?.slug || "";
   
   const { t, getLocalized } = useTranslation();
-  const { markVideoComplete, isVideoComplete } = useStore();
+  const { markVideoComplete, isVideoComplete, videoProgress, setVideoProgress } = useStore();
   
   const { data: course, isLoading: courseLoading } = useCourse(slug);
   const { data: videos, isLoading: videosLoading } = useCourseVideos(course?.id);
@@ -45,11 +45,23 @@ export default function CourseDetail() {
   if (!course) return <div className="p-12 text-center text-muted-foreground">Course not found</div>;
 
   const activeVideo = videos?.find(v => v.id === activeVideoId);
+  const lastTime = activeVideo ? videoProgress[`${course.id}-${activeVideo.id}`] || 0 : 0;
 
   const handleVideoComplete = () => {
     if (course && activeVideoId) {
       markVideoComplete(course.id, activeVideoId);
     }
+  };
+
+  // Video progress handling via postMessage or just periodic updates
+  // For simplicity with iframe, we'll assume progress is tracked locally on time updates if using a proper SDK
+  // but here we will simulate with a basic local save mechanism when they switch or complete.
+  
+  const getProgress = (vId: number) => {
+    if (isVideoComplete(course.id, vId)) return 100;
+    const current = videoProgress[`${course.id}-${vId}`] || 0;
+    const duration = videos?.find(v => v.id === vId)?.duration || 1;
+    return Math.min(Math.round((current / duration) * 100), 99);
   };
 
   return (
@@ -62,7 +74,7 @@ export default function CourseDetail() {
             <iframe
               width="100%"
               height="100%"
-              src={`https://www.youtube.com/embed/${activeVideo.youtubeId}?enablejsapi=1`}
+              src={`https://www.youtube.com/embed/${activeVideo.youtubeId}?enablejsapi=1&start=${Math.floor(lastTime)}`}
               title={getLocalized(activeVideo.title)}
               frameBorder="0"
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
@@ -185,12 +197,26 @@ export default function CourseDetail() {
                   )}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className={cn(
-                    "text-sm font-medium leading-tight mb-1",
-                    isActive ? "text-primary-foreground" : "text-foreground group-hover:text-primary"
-                  )}>
-                    {getLocalized(video.title)}
-                  </p>
+                  <div className="flex items-center justify-between mb-1">
+                    <p className={cn(
+                      "text-sm font-medium leading-tight truncate mr-2",
+                      isActive ? "text-primary-foreground" : "text-foreground group-hover:text-primary"
+                    )}>
+                      {getLocalized(video.title)}
+                    </p>
+                    <span className={cn(
+                      "text-[10px] font-mono",
+                      isActive ? "text-primary-foreground/70" : "text-muted-foreground"
+                    )}>
+                      %{getProgress(video.id)}
+                    </span>
+                  </div>
+                  <div className="h-1 w-full bg-black/10 rounded-full mb-1 overflow-hidden">
+                    <div 
+                      className={cn("h-full transition-all", isActive ? "bg-white/40" : "bg-primary")}
+                      style={{ width: `${getProgress(video.id)}%` }}
+                    />
+                  </div>
                   <div className={cn(
                     "flex items-center gap-2 text-xs",
                     isActive ? "text-primary-foreground/80" : "text-muted-foreground"
