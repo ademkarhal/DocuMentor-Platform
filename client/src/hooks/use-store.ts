@@ -25,10 +25,22 @@ interface AppState {
   getCourseProgress: (courseId: number, totalVideos: number) => number;
 }
 
+const getDefaultLanguage = (): Language => {
+  const stored = localStorage.getItem('training-platform-storage');
+  if (stored) {
+    try {
+      const parsed = JSON.parse(stored);
+      if (parsed.state?.language) return parsed.state.language;
+    } catch {}
+  }
+  const browserLang = navigator.language.toLowerCase();
+  return browserLang.startsWith('tr') ? 'tr' : 'en';
+};
+
 export const useStore = create<AppState>()(
   persist(
     (set, get) => ({
-      language: 'en',
+      language: getDefaultLanguage(),
       setLanguage: (lang) => set({ language: lang }),
       theme: 'light',
       toggleTheme: () => {

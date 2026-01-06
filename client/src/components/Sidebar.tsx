@@ -3,11 +3,11 @@ import { Compass, Home, MonitorPlay, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTranslation, useStore } from "@/hooks/use-store";
 import { useCategories } from "@/hooks/use-api";
-import logoImage from "@assets/generated_images/technotrade_academy_professional_logo.png";
+import logoImage from "@assets/generated_images/technotrade_horizontal_corporate_logo.png";
 
 export function Sidebar({ className }: { className?: string }) {
   const [location] = useLocation();
-  const { t, getLocalized } = useTranslation();
+  const { t, getLocalized, lang } = useTranslation();
   const { data: categories } = useCategories();
 
   const isActive = (path: string) => location === path;
@@ -28,9 +28,11 @@ export function Sidebar({ className }: { className?: string }) {
   return (
     <div className={cn("flex flex-col h-full bg-card border-r border-border", className)}>
       <div className="p-6">
-        <div className="flex items-center gap-3 mb-8">
-          <img src={logoImage} alt="Technotrade Academy" className="w-9 h-9 rounded-lg" />
-          <span className="font-display font-bold text-lg tracking-tight">Technotrade Academy</span>
+        <div className="flex flex-col items-center gap-2 mb-8">
+          <img src={logoImage} alt="Technotrade Academy" className="w-full max-w-[140px] h-auto" />
+          <span className="font-display font-bold text-sm tracking-tight text-center text-slate-700 dark:text-slate-300">
+            {lang === 'tr' ? 'Technotrade Akademi' : 'Technotrade Academy'}
+          </span>
         </div>
 
         <nav className="space-y-6">
