@@ -17,6 +17,71 @@ interface VideoPlayerProps {
   className?: string;
 }
 
+declare global {
+  interface Window {
+    YT: {
+      Player: new (elementId: string, options: {
+        videoId: string;
+        playerVars?: Record<string, unknown>;
+        events?: {
+          onReady?: (event: { target: YTPlayer }) => void;
+          onStateChange?: (event: { data: number; target: YTPlayer }) => void;
+        };
+      }) => YTPlayer;
+      PlayerState: {
+        PLAYING: number;
+        PAUSED: number;
+        ENDED: number;
+      };
+    };
+    onYouTubeIframeAPIReady?: () => void;
+  }
+}
+
+interface YTPlayer {
+  getCurrentTime: () => number;
+  getDuration: () => number;
+  getPlayerState: () => number;
+  seekTo: (seconds: number, allowSeekAhead: boolean) => void;
+  destroy: () => void;
+}
+
+let apiLoaded = false;
+let apiLoadPromise: Promise<void> | null = null;
+
+function loadYouTubeAPI(): Promise<void> {
+  if (apiLoaded) return Promise.resolve();
+  if (apiLoadPromise) return apiLoadPromise;
+  
+  apiLoadPromise = new Promise((resolve) => {
+    const existingScript = document.querySelector('script[src*="youtube.com/iframe_api"]');
+    if (existingScript) {
+      if (window.YT && window.YT.Player) {
+        apiLoaded = true;
+        resolve();
+      } else {
+        window.onYouTubeIframeAPIReady = () => {
+          apiLoaded = true;
+          resolve();
+        };
+      }
+      return;
+    }
+
+    window.onYouTubeIframeAPIReady = () => {
+      apiLoaded = true;
+      resolve();
+    };
+
+    const script = document.createElement('script');
+    script.src = 'https://www.youtube.com/iframe_api';
+    script.async = true;
+    document.body.appendChild(script);
+  });
+  
+  return apiLoadPromise;
+}
+
 export default function VideoPlayer({
   sources,
   activeIndex,
@@ -26,10 +91,10 @@ export default function VideoPlayer({
   onComplete,
   className = "",
 }: VideoPlayerProps) {
+  const playerRef = useRef<YTPlayer | null>(null);
   const progressIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const currentPositionRef = useRef<number>(0);
   const hasCompletedRef = useRef<boolean>(false);
-  const isVisibleRef = useRef<boolean>(true);
+  const containerIdRef = useRef<string>(`yt-player-${Math.random().toString(36).substr(2, 9)}`);
   const lastVideoIdRef = useRef<number | null>(null);
 
   const activeSource = sources[activeIndex];
@@ -41,61 +106,110 @@ export default function VideoPlayer({
     }
   }, []);
 
-  useEffect(() => {
-    const handleVisibilityChange = () => {
-      isVisibleRef.current = document.visibilityState === "visible";
-    };
+  const startProgressTracking = useCallback(() => {
+    if (!activeSource || !playerRef.current) return;
+    
+    clearProgressInterval();
+    
+    progressIntervalRef.current = setInterval(() => {
+      if (!playerRef.current || !activeSource) return;
+      
+      try {
+        const playerState = playerRef.current.getPlayerState();
+        
+        if (playerState !== 1) return;
+        
+        const currentTime = playerRef.current.getCurrentTime();
+        const duration = playerRef.current.getDuration() || activeSource.duration;
+        
+        if (duration > 0) {
+          const percent = Math.min(Math.round((currentTime / duration) * 100), 100);
+          
+          if (onProgress) {
+            onProgress(activeSource.id, currentTime, duration, percent);
+          }
 
-    document.addEventListener("visibilitychange", handleVisibilityChange);
-    return () => document.removeEventListener("visibilitychange", handleVisibilityChange);
-  }, []);
+          if (percent >= 90 && !hasCompletedRef.current) {
+            hasCompletedRef.current = true;
+            if (onComplete) {
+              onComplete(activeSource.id);
+            }
+          }
+
+          if (currentTime >= duration - 1) {
+            clearProgressInterval();
+            
+            if (activeIndex < sources.length - 1 && onVideoChange) {
+              setTimeout(() => onVideoChange(activeIndex + 1), 1500);
+            }
+          }
+        }
+      } catch {
+        // Player not ready yet
+      }
+    }, 1000);
+  }, [activeSource, onProgress, onComplete, onVideoChange, activeIndex, sources.length, clearProgressInterval]);
 
   useEffect(() => {
     if (!activeSource) return;
-    
+
     const isNewVideo = lastVideoIdRef.current !== activeSource.id;
     lastVideoIdRef.current = activeSource.id;
-    
+
     if (isNewVideo) {
-      currentPositionRef.current = initialPosition;
-      hasCompletedRef.current = activeSource.duration > 0 && initialPosition >= activeSource.duration * 0.9;
+      hasCompletedRef.current = false;
     }
 
-    clearProgressInterval();
-
-    progressIntervalRef.current = setInterval(() => {
-      if (!isVisibleRef.current || !activeSource) return;
-
-      currentPositionRef.current += 1;
-      const position = currentPositionRef.current;
-      const duration = activeSource.duration;
-
-      if (duration > 0) {
-        const percent = Math.min(Math.round((position / duration) * 100), 100);
-        
-        if (onProgress) {
-          onProgress(activeSource.id, position, duration, percent);
-        }
-
-        if (percent >= 90 && !hasCompletedRef.current) {
-          hasCompletedRef.current = true;
-          if (onComplete) {
-            onComplete(activeSource.id);
-          }
-        }
-
-        if (position >= duration) {
-          clearProgressInterval();
-          
-          if (activeIndex < sources.length - 1 && onVideoChange) {
-            setTimeout(() => onVideoChange(activeIndex + 1), 1500);
-          }
-        }
+    const initPlayer = async () => {
+      await loadYouTubeAPI();
+      
+      if (playerRef.current) {
+        playerRef.current.destroy();
+        playerRef.current = null;
       }
-    }, 1000);
 
-    return clearProgressInterval;
-  }, [activeSource?.id, initialPosition, onProgress, onComplete, onVideoChange, activeIndex, sources.length, clearProgressInterval, activeSource]);
+      const container = document.getElementById(containerIdRef.current);
+      if (!container) return;
+
+      playerRef.current = new window.YT.Player(containerIdRef.current, {
+        videoId: activeSource.youtubeId,
+        playerVars: {
+          autoplay: 1,
+          rel: 0,
+          modestbranding: 1,
+          iv_load_policy: 3,
+          start: Math.floor(initialPosition),
+          origin: window.location.origin,
+        },
+        events: {
+          onReady: () => {
+            startProgressTracking();
+          },
+          onStateChange: (event) => {
+            if (event.data === 1) {
+              startProgressTracking();
+            } else {
+              clearProgressInterval();
+            }
+          },
+        },
+      });
+    };
+
+    initPlayer();
+
+    return () => {
+      clearProgressInterval();
+      if (playerRef.current) {
+        try {
+          playerRef.current.destroy();
+        } catch {
+          // Player already destroyed
+        }
+        playerRef.current = null;
+      }
+    };
+  }, [activeSource?.id, initialPosition, startProgressTracking, clearProgressInterval]);
 
   if (!activeSource) {
     return (
@@ -107,17 +221,11 @@ export default function VideoPlayer({
 
   return (
     <div className={`yt-wrapper ${className}`}>
-      <div className="yt-frame-container">
-        <iframe
-          key={activeSource.id}
-          src={`https://www.youtube.com/embed/${activeSource.youtubeId}?autoplay=1&rel=0&modestbranding=1&iv_load_policy=3&enablejsapi=1&origin=${encodeURIComponent(window.location.origin)}&start=${Math.floor(initialPosition)}`}
-          className="yt-iframe"
-          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-          allowFullScreen
-          title={activeSource.title}
-          data-testid="video-player"
-        />
-      </div>
+      <div 
+        id={containerIdRef.current}
+        className="w-full h-full"
+        data-testid="video-player"
+      />
     </div>
   );
 }
