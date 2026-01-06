@@ -43,7 +43,27 @@ export interface Document {
   fileType: string;
 }
 
-const FLUTTER_PLAYLIST_ID = "PLQVXoXFVVtp1DFmoTL4cPTWEWiqndKexZ";
+const PLAYLISTS = [
+  {
+    id: "PLQVXoXFVVtp3e_urGZcMNAHx2Eo4Rm5Xk",
+    slug: "flutter-course",
+    defaultTitle: { tr: "Flutter Dersleri", en: "Flutter Course" },
+    defaultDescription: { tr: "Flutter ile mobil uygulama geliştirme", en: "Mobile app development with Flutter" }
+  },
+  {
+    id: "PLQVXoXFVVtp1DFmoTL4cPTWEWiqndKexZ",
+    slug: "aspnet-core-course",
+    defaultTitle: { tr: "ASP.NET Core Dersleri", en: "ASP.NET Core Course" },
+    defaultDescription: { tr: "ASP.NET Core ile web geliştirme", en: "Web development with ASP.NET Core" }
+  },
+  {
+    id: "PLQVXoXFVVtp2GGKQP0ElqsBnMFkMnJcMy",
+    slug: "nextjs-course",
+    defaultTitle: { tr: "NextJS Dersleri", en: "NextJS Course" },
+    defaultDescription: { tr: "NextJS ile modern web uygulamaları", en: "Modern web apps with NextJS" }
+  }
+];
+
 const CACHE_FILE = "/tmp/youtube_cache.json";
 const CACHE_DURATION = 24 * 60 * 60 * 1000; // 24 hours
 
@@ -123,6 +143,11 @@ class MemoryStorage {
   private async fetchFromYouTube(): Promise<void> {
     console.log("Fetching data from YouTube...");
 
+    // Reset arrays
+    this.categories = [];
+    this.courses = [];
+    this.videos = [];
+
     this.categories.push({
       id: 1,
       slug: "software-development",
@@ -130,42 +155,54 @@ class MemoryStorage {
       icon: "code"
     });
 
-    const playlistInfo = await getPlaylistInfo(FLUTTER_PLAYLIST_ID);
-    const playlistVideos = await fetchPlaylistVideos(FLUTTER_PLAYLIST_ID);
+    let videoIdCounter = 1;
 
-    if (playlistVideos.length > 0) {
-      this.courses.push({
-        id: 1,
-        categoryId: 1,
-        slug: "flutter-course",
-        title: {
-          tr: playlistInfo?.title || "Flutter Dersleri",
-          en: playlistInfo?.title || "Flutter Course"
-        },
-        description: {
-          tr: playlistInfo?.description || "Flutter ile mobil uygulama geliştirme",
-          en: playlistInfo?.description || "Mobile app development with Flutter"
-        },
-        thumbnail: playlistInfo?.thumbnail || "https://images.unsplash.com/photo-1512941937669-90a1b58e7e9c?w=800&q=80",
-        totalVideos: playlistVideos.length,
-        nextcloudShareUrl: ""
-      });
+    // Fetch all playlists
+    for (let i = 0; i < PLAYLISTS.length; i++) {
+      const playlist = PLAYLISTS[i];
+      const courseId = i + 1;
+      
+      console.log(`Fetching playlist: ${playlist.slug} (${playlist.id})`);
+      
+      const playlistInfo = await getPlaylistInfo(playlist.id);
+      const playlistVideos = await fetchPlaylistVideos(playlist.id);
 
-      playlistVideos.forEach((video, index) => {
-        this.videos.push({
-          id: index + 1,
-          courseId: 1,
-          title: { tr: video.title, en: video.title },
-          description: { tr: video.description, en: video.description },
-          youtubeId: video.youtubeId,
-          duration: video.duration,
-          sequenceOrder: video.sequenceOrder
+      if (playlistVideos.length > 0) {
+        this.courses.push({
+          id: courseId,
+          categoryId: 1,
+          slug: playlist.slug,
+          title: {
+            tr: playlistInfo?.title || playlist.defaultTitle.tr,
+            en: playlistInfo?.title || playlist.defaultTitle.en
+          },
+          description: {
+            tr: playlistInfo?.description || playlist.defaultDescription.tr,
+            en: playlistInfo?.description || playlist.defaultDescription.en
+          },
+          thumbnail: playlistInfo?.thumbnail || "https://images.unsplash.com/photo-1517694712202-14dd9538aa97?w=800&q=80",
+          totalVideos: playlistVideos.length,
+          nextcloudShareUrl: ""
         });
-      });
 
-      console.log(`Fetched ${playlistVideos.length} videos from YouTube`);
-      this.saveToCache();
+        playlistVideos.forEach((video) => {
+          this.videos.push({
+            id: videoIdCounter++,
+            courseId: courseId,
+            title: { tr: video.title, en: video.title },
+            description: { tr: video.description, en: video.description },
+            youtubeId: video.youtubeId,
+            duration: video.duration,
+            sequenceOrder: video.sequenceOrder
+          });
+        });
+
+        console.log(`Fetched ${playlistVideos.length} videos for ${playlist.slug}`);
+      }
     }
+
+    console.log(`Total: ${this.courses.length} courses, ${this.videos.length} videos`);
+    this.saveToCache();
   }
 
   async getCategories(): Promise<Category[]> {
