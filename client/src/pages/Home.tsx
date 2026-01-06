@@ -415,10 +415,10 @@ export default function Home() {
                 <motion.div key={course.id} variants={item}>
                   <Link 
                     href={`/courses/${course.slug}`}
-                    className="block h-full bg-card rounded-2xl border border-border overflow-hidden hover:shadow-xl hover:shadow-black/5 hover:border-primary/30 transition-all duration-300 group"
+                    className="flex flex-col h-full bg-card rounded-2xl border border-border overflow-hidden hover:shadow-xl hover:shadow-black/5 hover:border-primary/30 transition-all duration-300 group"
                     data-testid={`link-course-${course.id}`}
                   >
-                    <div className="aspect-video bg-muted relative overflow-hidden">
+                    <div className="aspect-video bg-muted relative overflow-hidden shrink-0">
                       <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent z-10" />
                       <img 
                         src={`https://images.unsplash.com/photo-1498050108023-c5249f4df085?w=800&q=80`} 
@@ -445,7 +445,7 @@ export default function Home() {
                       )}
                     </div>
                     
-                    <div className="p-5 flex flex-col h-full">
+                    <div className="p-5 flex flex-col flex-1">
                       <h3 className="font-bold text-lg mb-1 line-clamp-1 group-hover:text-primary transition-colors">
                         {getLocalized(course.title as { en: string; tr: string })}
                       </h3>

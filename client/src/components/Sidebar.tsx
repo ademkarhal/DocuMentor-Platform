@@ -32,7 +32,7 @@ export function Sidebar({ className }: { className?: string }) {
           <img 
             src={logoImage} 
             alt="Technotrade Academy" 
-            className="w-full max-w-[140px] h-auto dark:brightness-0 dark:invert" 
+            className="w-full max-w-[140px] h-auto mix-blend-multiply dark:mix-blend-screen dark:[filter:invert(1)_brightness(1.5)]" 
           />
           <span className="font-display font-bold text-sm tracking-tight text-center text-slate-700 dark:text-slate-300">
             {lang === 'tr' ? 'Technotrade Akademi' : 'Technotrade Academy'}
