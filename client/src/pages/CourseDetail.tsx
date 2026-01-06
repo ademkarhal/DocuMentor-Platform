@@ -125,26 +125,26 @@ export default function CourseDetail() {
   return (
     <div className="max-w-7xl mx-auto pb-12 h-[calc(100vh-5rem)] flex flex-col lg:flex-row gap-6">
       <div className="flex-1 flex flex-col min-h-0 overflow-y-auto pr-2">
-        <div className="aspect-video bg-gradient-to-br from-slate-900 to-slate-800 rounded-2xl overflow-hidden shadow-2xl shadow-black/30 mb-6 shrink-0 relative">
-          {videoSources.length > 0 ? (
-            <VideoPlayer
-              sources={videoSources}
-              activeIndex={activeVideoIndex}
-              initialPosition={getInitialPosition()}
-              onVideoChange={handleVideoChange}
-              onProgress={handleVideoProgress}
-              onComplete={handleVideoComplete}
-              className="w-full h-full"
-            />
-          ) : (
+        {videoSources.length > 0 ? (
+          <VideoPlayer
+            sources={videoSources}
+            activeIndex={activeVideoIndex}
+            initialPosition={getInitialPosition()}
+            onVideoChange={handleVideoChange}
+            onProgress={handleVideoProgress}
+            onComplete={handleVideoComplete}
+            className="mb-6 shrink-0"
+          />
+        ) : (
+          <div className="aspect-video bg-gradient-to-br from-slate-900 to-slate-800 rounded-2xl overflow-hidden shadow-2xl shadow-black/30 mb-6 shrink-0 relative">
             <div className="w-full h-full flex items-center justify-center text-white/50 absolute inset-0">
               <div className="text-center">
                 <Play className="w-16 h-16 mx-auto mb-4 opacity-30" />
                 <p>Izlemeye baslamak icin bir video secin</p>
               </div>
             </div>
-          )}
-        </div>
+          </div>
+        )}
 
         <div className="space-y-6">
           <div className="flex items-start justify-between gap-4 flex-wrap">
