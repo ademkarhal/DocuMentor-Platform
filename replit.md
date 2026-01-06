@@ -81,6 +81,14 @@ CSS variables define the color palette in `client/src/index.css` with separate `
 - **embla-carousel-react** - Carousel functionality
 - **Radix UI** - Accessible UI primitives (full suite installed)
 
+### API Caching
+- **Location:** `client/src/hooks/use-api.ts`
+- **Strategy:** localStorage-based caching with 24-hour expiration
+- **Cached endpoints:** categories, courses, videos, documents
+- **Cache keys:** `api_cache_<type>_<id>` (e.g., `api_cache_videos_6`)
+- **Non-cached:** Search queries (real-time results needed)
+- **Behavior:** Checks localStorage first, fetches from API if cache miss or expired (>24h)
+
 ### Video Hosting
 - **YouTube** - All course videos hosted externally, embedded via iframe/player
 
