@@ -58,28 +58,29 @@ export default function CourseDetail() {
   const handleProgress = (state: { playedSeconds: number }) => {
     if (!activeVideo || !course) return;
     
-    const isCompleted = state.playedSeconds / activeVideo.duration > 0.9;
+    // Auto-mark completed if watched more than 90%
+    const isNowCompleted = state.playedSeconds / activeVideo.duration > 0.9;
     
-    apiRequest("POST", "/api/progress", {
-      courseId: course.id,
-      videoId: activeVideo.id,
-      lastPosition: Math.floor(state.playedSeconds),
-      isCompleted: isCompleted || currentProgress?.isCompleted || false
-    }).then(() => {
-      queryClient.invalidateQueries({ queryKey: [`/api/courses/${course.id}/progress`] });
-    });
+    // Only update if position changed significantly (every 5 seconds) to reduce API calls
+    // or if completion status changed
+    const lastSavedPosition = currentProgress?.lastPosition || 0;
+    const positionDiff = Math.abs(state.playedSeconds - lastSavedPosition);
+    const completionChanged = isNowCompleted && !currentProgress?.isCompleted;
+
+    if (positionDiff > 5 || completionChanged) {
+      apiRequest("POST", "/api/progress", {
+        courseId: course.id,
+        videoId: activeVideo.id,
+        lastPosition: Math.floor(state.playedSeconds),
+        isCompleted: isNowCompleted || currentProgress?.isCompleted || false
+      }).then(() => {
+        queryClient.invalidateQueries({ queryKey: [`/api/courses/${course.id}/progress`] });
+      });
+    }
   };
 
   const handleVideoComplete = () => {
-    if (!activeVideo || !course) return;
-    apiRequest("POST", "/api/progress", {
-      courseId: course.id,
-      videoId: activeVideo.id,
-      lastPosition: activeVideo.duration,
-      isCompleted: true
-    }).then(() => {
-      queryClient.invalidateQueries({ queryKey: [`/api/courses/${course.id}/progress`] });
-    });
+    // Manual completion removed as requested
   };
 
   const getProgress = (vId: number) => {
@@ -141,13 +142,12 @@ export default function CourseDetail() {
               </p>
             </div>
             {activeVideo && (
-              <button 
-                onClick={handleVideoComplete}
+              <div 
                 className={cn(
-                  "flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-colors border",
+                  "flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium border",
                   currentProgress?.isCompleted
                     ? "bg-green-100 text-green-700 border-green-200 dark:bg-green-900/30 dark:text-green-400 dark:border-green-800"
-                    : "bg-background text-muted-foreground border-border hover:bg-muted"
+                    : "bg-background text-muted-foreground border-border"
                 )}
               >
                 {currentProgress?.isCompleted ? (
@@ -156,10 +156,10 @@ export default function CourseDetail() {
                   </>
                 ) : (
                   <>
-                    <Circle className="w-4 h-4" /> Mark Complete
+                    <Clock className="w-4 h-4" /> {Math.floor(getProgress(activeVideo.id))}% {t.completed}
                   </>
                 )}
-              </button>
+              </div>
             )}
           </div>
 
