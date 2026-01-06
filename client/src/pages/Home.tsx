@@ -201,73 +201,82 @@ export default function Home() {
           </CardContent>
         </Card>
 
-        {/* Netflix-style Continue Watching */}
+        {/* Udemy-style Continue Watching */}
         {stats.startedCourses.length > 0 ? (
           <div className="space-y-4">
-            <h3 className="text-lg font-semibold flex items-center gap-2">
-              <Play className="w-5 h-5 text-primary" />
-              {lang === 'tr' ? "Kaldığım Yerden Devam Et" : "Continue Watching"}
-            </h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {courses?.filter(c => stats.startedCourses.includes(c.id)).slice(0, 3).map(course => {
+            <div className="flex items-center justify-between gap-4">
+              <h3 className="text-xl font-bold">
+                {lang === 'tr' ? "Öğrenmeye başlayalım" : "Let's start learning"}
+              </h3>
+              <Link 
+                href="/courses" 
+                className="text-primary text-sm font-medium hover:underline"
+                data-testid="link-my-learning"
+              >
+                {lang === 'tr' ? "Öğrenim İçeriğim" : "My Learning"}
+              </Link>
+            </div>
+            <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-hide">
+              {courses?.filter(c => stats.startedCourses.includes(c.id)).slice(0, 5).map(course => {
                 const courseCompletedCount = Object.keys(completedVideos).filter(key => key.startsWith(`${course.id}-`)).length;
                 const courseWatchedSeconds = Object.entries(videoProgress)
                   .filter(([key]) => key.startsWith(`${course.id}-`))
                   .reduce((sum, [_, sec]) => sum + (sec || 0), 0);
-                const percent = course.totalVideos ? Math.round((courseCompletedCount / course.totalVideos) * 100) : 0;
+                const watchedMinutes = Math.floor(courseWatchedSeconds / 60);
+                const currentVideoNum = courseCompletedCount + 1;
                 
                 return (
                   <Link 
                     key={course.id} 
                     href={`/courses/${course.slug}`}
-                    className="group relative rounded-xl overflow-hidden bg-card border border-border hover:border-primary/50 transition-all hover:shadow-lg hover:shadow-primary/10"
+                    className="group flex gap-3 min-w-[320px] max-w-[320px] p-3 bg-card rounded-lg border border-border hover:border-primary/50 hover:shadow-md transition-all"
                     data-testid={`card-continue-${course.id}`}
                   >
-                    <div className="aspect-video relative">
+                    {/* Thumbnail with play button */}
+                    <div className="relative w-20 h-20 shrink-0 rounded-md overflow-hidden bg-muted">
                       <img 
-                        src="https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=600&q=80" 
+                        src="https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=200&q=80" 
                         alt={getLocalized(course.title)}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                        className="w-full h-full object-cover"
                       />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
-                      
-                      {/* Play button overlay */}
-                      <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                        <div className="w-14 h-14 rounded-full bg-primary flex items-center justify-center shadow-xl">
-                          <Play className="w-6 h-6 text-primary-foreground fill-current ml-1" />
+                      <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+                        <div className="w-10 h-10 rounded-full bg-white/90 flex items-center justify-center group-hover:scale-110 transition-transform">
+                          <Play className="w-4 h-4 text-foreground fill-current ml-0.5" />
                         </div>
                       </div>
-                      
                       {/* Progress bar */}
-                      <div className="absolute bottom-0 left-0 right-0">
-                        <div className="h-1 bg-white/20">
-                          <div 
-                            className="h-full bg-primary transition-all"
-                            style={{ width: `${percent}%` }}
-                          />
-                        </div>
+                      <div className="absolute bottom-0 left-0 right-0 h-1 bg-muted-foreground/30">
+                        <div 
+                          className="h-full bg-primary"
+                          style={{ width: `${course.totalVideos ? (courseCompletedCount / course.totalVideos) * 100 : 0}%` }}
+                        />
                       </div>
-                      
-                      {/* Info overlay */}
-                      <div className="absolute bottom-3 left-3 right-3">
-                        <h4 className="text-white font-semibold text-sm truncate mb-1">
-                          {getLocalized(course.title)}
-                        </h4>
-                        <div className="flex items-center gap-2 text-white/80 text-xs">
-                          <span className="font-medium text-primary">%{percent}</span>
-                          <span>|</span>
-                          <span>{courseCompletedCount}/{course.totalVideos} {lang === 'tr' ? 'video' : 'videos'}</span>
-                          <span>|</span>
-                          <span className="flex items-center gap-1">
-                            <Clock className="w-3 h-3" />
-                            {formatDuration(Math.floor(courseWatchedSeconds / 3600), Math.floor((courseWatchedSeconds % 3600) / 60))}
-                          </span>
-                        </div>
-                      </div>
+                    </div>
+                    
+                    {/* Course info */}
+                    <div className="flex flex-col justify-center min-w-0 flex-1">
+                      <p className="text-xs text-muted-foreground truncate mb-0.5">
+                        {getLocalized(course.title)}
+                      </p>
+                      <p className="text-sm font-semibold text-foreground truncate">
+                        {currentVideoNum}. {lang === 'tr' ? 'Video' : 'Lesson'} {currentVideoNum}
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {lang === 'tr' ? 'Ders' : 'Lesson'} • {watchedMinutes} {lang === 'tr' ? 'dk.' : 'min.'}
+                      </p>
                     </div>
                   </Link>
                 );
               })}
+              
+              {/* Scroll indicator */}
+              {stats.startedCourses.length > 3 && (
+                <div className="flex items-center justify-center min-w-[40px]">
+                  <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center">
+                    <ArrowRight className="w-5 h-5 text-muted-foreground" />
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         ) : (
