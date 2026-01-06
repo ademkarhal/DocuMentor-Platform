@@ -1,8 +1,9 @@
 import { Link, useLocation } from "wouter";
-import { BookOpen, Compass, FileText, Home, MonitorPlay, ChevronRight } from "lucide-react";
+import { Compass, Home, MonitorPlay, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTranslation, useStore } from "@/hooks/use-store";
 import { useCategories } from "@/hooks/use-api";
+import logoImage from "@assets/generated_images/technotrade_academy_professional_logo.png";
 
 export function Sidebar({ className }: { className?: string }) {
   const [location] = useLocation();
@@ -27,11 +28,9 @@ export function Sidebar({ className }: { className?: string }) {
   return (
     <div className={cn("flex flex-col h-full bg-card border-r border-border", className)}>
       <div className="p-6">
-        <div className="flex items-center gap-2 mb-8">
-          <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center shadow-lg shadow-primary/25">
-            <BookOpen className="w-5 h-5 text-primary-foreground" />
-          </div>
-          <span className="font-display font-bold text-xl tracking-tight">EduPlatform</span>
+        <div className="flex items-center gap-3 mb-8">
+          <img src={logoImage} alt="Technotrade Academy" className="w-9 h-9 rounded-lg" />
+          <span className="font-display font-bold text-lg tracking-tight">Technotrade Academy</span>
         </div>
 
         <nav className="space-y-6">

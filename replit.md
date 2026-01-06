@@ -1,4 +1,4 @@
-# EduPlatform - Training & Documentation SPA
+# Technotrade Academy - Training & Documentation SPA
 
 ## Overview
 
