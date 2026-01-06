@@ -1,8 +1,8 @@
 import { useCourse, useCourseVideos, useCourseDocuments } from "@/hooks/use-api";
 import { useTranslation, useStore } from "@/hooks/use-store";
 import { useRoute } from "wouter";
-import { useState, useEffect } from "react";
-import { CheckCircle2, FileText, Download, Play, Clock, ExternalLink } from "lucide-react";
+import { useState, useEffect, useRef, useCallback } from "react";
+import { CheckCircle2, FileText, Download, Play, Clock } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useQuery } from "@tanstack/react-query";
@@ -23,12 +23,78 @@ export default function CourseDetail() {
   });
 
   const [activeVideoId, setActiveVideoId] = useState<number | null>(null);
+  const [liveProgress, setLiveProgress] = useState<Record<number, number>>({});
+  const progressIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const watchStartTimeRef = useRef<number>(0);
+  const startPositionRef = useRef<number>(0);
 
   useEffect(() => {
     if (videos && videos.length > 0 && !activeVideoId) {
       setActiveVideoId(videos[0].id);
     }
   }, [videos, activeVideoId]);
+
+  const activeVideo = videos?.find(v => v.id === activeVideoId);
+
+  const saveProgress = useCallback(async (videoId: number, position: number, duration: number) => {
+    if (!course?.id) return;
+    
+    const isCompleted = position / duration >= 0.9;
+    try {
+      await apiRequest("POST", "/api/progress", {
+        courseId: course.id,
+        videoId,
+        lastPosition: Math.floor(position),
+        isCompleted
+      });
+      if (isCompleted) {
+        queryClient.invalidateQueries({ queryKey: [`/api/courses/${course.id}/progress`] });
+      }
+    } catch (e) {}
+  }, [course?.id]);
+
+  useEffect(() => {
+    if (!activeVideo || !course?.id) return;
+
+    const existingProgress = progressData?.find((p: any) => p.videoId === activeVideo.id);
+    startPositionRef.current = existingProgress?.lastPosition || 0;
+    watchStartTimeRef.current = Date.now();
+    
+    if (progressIntervalRef.current) {
+      clearInterval(progressIntervalRef.current);
+    }
+
+    const videoId = activeVideo.id;
+    const duration = activeVideo.duration;
+    const courseId = course.id;
+
+    progressIntervalRef.current = setInterval(() => {
+      const elapsedSeconds = Math.floor((Date.now() - watchStartTimeRef.current) / 1000);
+      const currentPosition = startPositionRef.current + elapsedSeconds;
+      
+      if (currentPosition >= duration) {
+        setLiveProgress(prev => ({ ...prev, [videoId]: 100 }));
+        saveProgress(videoId, duration, duration);
+        if (progressIntervalRef.current) {
+          clearInterval(progressIntervalRef.current);
+        }
+        return;
+      }
+
+      const progressPercent = Math.min(Math.round((currentPosition / duration) * 100), 99);
+      setLiveProgress(prev => ({ ...prev, [videoId]: progressPercent }));
+
+      if (elapsedSeconds > 0 && elapsedSeconds % 10 === 0) {
+        saveProgress(videoId, currentPosition, duration);
+      }
+    }, 1000);
+
+    return () => {
+      if (progressIntervalRef.current) {
+        clearInterval(progressIntervalRef.current);
+      }
+    };
+  }, [activeVideo?.id, course?.id, progressData, saveProgress]);
 
   if (courseLoading || videosLoading) {
     return (
@@ -45,12 +111,12 @@ export default function CourseDetail() {
     );
   }
 
-  if (!course) return <div className="p-12 text-center text-muted-foreground">Course not found</div>;
-
-  const activeVideo = videos?.find(v => v.id === activeVideoId);
-  const currentProgress = progressData?.find((p: any) => p.videoId === activeVideoId);
+  if (!course) return <div className="p-12 text-center text-muted-foreground">Kurs bulunamadi</div>;
 
   const getProgress = (vId: number) => {
+    if (liveProgress[vId] !== undefined) {
+      return liveProgress[vId];
+    }
     const p = progressData?.find((p: any) => p.videoId === vId);
     if (p?.isCompleted) return 100;
     const video = videos?.find(v => v.id === vId);
@@ -59,6 +125,7 @@ export default function CourseDetail() {
   };
 
   const isVideoCompleted = (vId: number) => {
+    if (liveProgress[vId] === 100) return true;
     return !!progressData?.find((p: any) => p.videoId === vId)?.isCompleted;
   };
 
@@ -69,34 +136,20 @@ export default function CourseDetail() {
   return (
     <div className="max-w-7xl mx-auto pb-12 h-[calc(100vh-5rem)] flex flex-col lg:flex-row gap-6">
       <div className="flex-1 flex flex-col min-h-0 overflow-y-auto pr-2">
-        <div className="aspect-video bg-gradient-to-br from-slate-900 to-slate-800 rounded-2xl overflow-hidden shadow-2xl shadow-black/30 mb-6 shrink-0 relative group">
+        <div className="aspect-video bg-gradient-to-br from-slate-900 to-slate-800 rounded-2xl overflow-hidden shadow-2xl shadow-black/30 mb-6 shrink-0 relative youtube-container">
           {activeVideo && (
-            <>
-              <iframe
-                key={activeVideo.id}
-                src={`https://www.youtube.com/embed/${activeVideo.youtubeId}?autoplay=1&rel=0&modestbranding=1`}
-                className="w-full h-full absolute inset-0"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                allowFullScreen
-                title={getLocalized(activeVideo.title as any)}
-                data-testid="video-player"
-              />
-              <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity">
-                <a
-                  href={`https://www.youtube.com/watch?v=${activeVideo.youtubeId}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-1.5 px-3 py-1.5 bg-black/60 backdrop-blur-sm text-white text-xs rounded-full hover:bg-black/80 transition-colors"
-                  data-testid="button-open-youtube"
-                >
-                  <ExternalLink className="w-3 h-3" />
-                  YouTube'da Ac
-                </a>
-              </div>
-            </>
+            <iframe
+              key={activeVideo.id}
+              src={`https://www.youtube-nocookie.com/embed/${activeVideo.youtubeId}?autoplay=1&rel=0&modestbranding=1&showinfo=0&iv_load_policy=3`}
+              className="w-full h-full absolute inset-0"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowFullScreen
+              title={getLocalized(activeVideo.title as any)}
+              data-testid="video-player"
+            />
           )}
           {!activeVideo && !videosLoading && (
-            <div className="w-full h-full flex items-center justify-center text-white/50">
+            <div className="w-full h-full flex items-center justify-center text-white/50 absolute inset-0">
               <div className="text-center">
                 <Play className="w-16 h-16 mx-auto mb-4 opacity-30" />
                 <p>Izlemeye baslamak icin bir video secin</p>
@@ -106,8 +159,8 @@ export default function CourseDetail() {
         </div>
 
         <div className="space-y-6">
-          <div className="flex items-start justify-between gap-4">
-            <div>
+          <div className="flex items-start justify-between gap-4 flex-wrap">
+            <div className="flex-1 min-w-0">
               <h1 className="text-2xl font-bold font-display mb-2">{activeVideo ? getLocalized(activeVideo.title as any) : getLocalized(course.title as any)}</h1>
               <p className="text-muted-foreground leading-relaxed">
                 {activeVideo ? getLocalized(activeVideo.description as any) : getLocalized(course.description as any)}
@@ -116,19 +169,19 @@ export default function CourseDetail() {
             {activeVideo && (
               <div 
                 className={cn(
-                  "flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium border",
-                  currentProgress?.isCompleted
+                  "flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium border shrink-0",
+                  isVideoCompleted(activeVideo.id)
                     ? "bg-green-100 text-green-700 border-green-200 dark:bg-green-900/30 dark:text-green-400 dark:border-green-800"
                     : "bg-background text-muted-foreground border-border"
                 )}
               >
-                {currentProgress?.isCompleted ? (
+                {isVideoCompleted(activeVideo.id) ? (
                   <>
                     <CheckCircle2 className="w-4 h-4" /> {t.completed}
                   </>
                 ) : (
                   <>
-                    <Clock className="w-4 h-4" /> {Math.floor(getProgress(activeVideo.id))}% {t.completed}
+                    <Clock className="w-4 h-4" /> %{getProgress(activeVideo.id)} {t.completed}
                   </>
                 )}
               </div>
@@ -185,6 +238,7 @@ export default function CourseDetail() {
           {videos?.sort((a,b) => a.sequenceOrder - b.sequenceOrder).map((video, index) => {
             const isActive = activeVideoId === video.id;
             const isCompleted = isVideoCompleted(video.id);
+            const progress = getProgress(video.id);
 
             return (
               <button
@@ -213,24 +267,27 @@ export default function CourseDetail() {
                   )}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between mb-1">
+                  <div className="flex items-center justify-between mb-1 gap-2">
                     <p className={cn(
-                      "text-sm font-medium leading-tight truncate mr-2",
+                      "text-sm font-medium leading-tight truncate",
                       isActive ? "text-primary-foreground" : "text-foreground group-hover:text-primary"
                     )}>
                       {getLocalized(video.title as any)}
                     </p>
                     <span className={cn(
-                      "text-[10px] font-mono",
+                      "text-[10px] font-mono shrink-0",
                       isActive ? "text-primary-foreground/70" : "text-muted-foreground"
                     )}>
-                      %{getProgress(video.id)}
+                      %{progress}
                     </span>
                   </div>
-                  <div className="h-1 w-full bg-black/10 rounded-full mb-1 overflow-hidden">
+                  <div className="h-1 w-full bg-black/10 dark:bg-white/10 rounded-full mb-1 overflow-hidden">
                     <div 
-                      className={cn("h-full transition-all", isActive ? "bg-white/40" : "bg-primary")}
-                      style={{ width: `${getProgress(video.id)}%` }}
+                      className={cn(
+                        "h-full transition-all duration-300",
+                        isActive ? "bg-white/40" : isCompleted ? "bg-green-500" : "bg-primary"
+                      )}
+                      style={{ width: `${progress}%` }}
                     />
                   </div>
                   <div className={cn(
