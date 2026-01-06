@@ -4,9 +4,8 @@ import { storage } from "./storage";
 import { api } from "@shared/routes";
 import { fetchPlaylistVideos, getPlaylistInfo } from "./youtube";
 
-// Playlist IDs
-const WEB_DEV_PLAYLIST_ID = "PLURN6mxdcwL-xIXzq92ZJN9yRW7Q0mjzw";
-const FLUTTER_PLAYLIST_ID = "PLaZoPjR0BnOG9z5aJ4zudiL3TmfaBZ2Qm";
+// Playlist IDs - New playlist with embed support
+const PYTHON_PLAYLIST_ID = "PLWctyKyPphPgqzd2Np8VlKiXhkpAjSV0c";
 
 export async function registerRoutes(
   httpServer: Server,
@@ -80,29 +79,29 @@ async function seedDatabaseFromYouTube() {
     icon: "code"
   });
 
-  // Fetch Web Development playlist info and videos
-  console.log("Fetching Web Development playlist...");
-  const webDevInfo = await getPlaylistInfo(WEB_DEV_PLAYLIST_ID);
-  const webDevVideos = await fetchPlaylistVideos(WEB_DEV_PLAYLIST_ID);
+  // Fetch Python playlist info and videos
+  console.log("Fetching Python playlist...");
+  const pythonInfo = await getPlaylistInfo(PYTHON_PLAYLIST_ID);
+  const pythonVideos = await fetchPlaylistVideos(PYTHON_PLAYLIST_ID);
   
-  if (webDevVideos.length > 0) {
+  if (pythonVideos.length > 0) {
     const course1 = await storage.createCourse({
       categoryId: cat1.id,
-      slug: "web-development",
+      slug: "python-course",
       title: { 
-        tr: webDevInfo?.title || "Web Geliştirme", 
-        en: webDevInfo?.title || "Web Development" 
+        tr: pythonInfo?.title || "Python Dersleri", 
+        en: pythonInfo?.title || "Python Course" 
       },
       description: { 
-        tr: webDevInfo?.description || "Sıfırdan ileri seviye web geliştirme", 
-        en: webDevInfo?.description || "Web development from scratch" 
+        tr: pythonInfo?.description || "Sıfırdan ileri seviye Python programlama", 
+        en: pythonInfo?.description || "Python programming from scratch" 
       },
-      thumbnail: webDevInfo?.thumbnail || "https://images.unsplash.com/photo-1587620962725-abab7fe55159?w=800&q=80",
-      totalVideos: webDevVideos.length,
+      thumbnail: pythonInfo?.thumbnail || "https://images.unsplash.com/photo-1526379095098-d400fd0bf935?w=800&q=80",
+      totalVideos: pythonVideos.length,
       nextcloudShareUrl: ""
     });
 
-    for (const video of webDevVideos) {
+    for (const video of pythonVideos) {
       await storage.createVideo({
         courseId: course1.id,
         title: { tr: video.title, en: video.title },
@@ -112,42 +111,7 @@ async function seedDatabaseFromYouTube() {
         sequenceOrder: video.sequenceOrder
       });
     }
-    console.log(`Added ${webDevVideos.length} videos for Web Development course`);
-  }
-
-  // Fetch Flutter playlist info and videos
-  console.log("Fetching Flutter playlist...");
-  const flutterInfo = await getPlaylistInfo(FLUTTER_PLAYLIST_ID);
-  const flutterVideos = await fetchPlaylistVideos(FLUTTER_PLAYLIST_ID);
-  
-  if (flutterVideos.length > 0) {
-    const course2 = await storage.createCourse({
-      categoryId: cat1.id,
-      slug: "flutter-development",
-      title: { 
-        tr: flutterInfo?.title || "Flutter ile Mobil Uygulama Geliştirme", 
-        en: flutterInfo?.title || "Mobile App Development with Flutter" 
-      },
-      description: { 
-        tr: flutterInfo?.description || "Sıfırdan Flutter ile mobil uygulamalar", 
-        en: flutterInfo?.description || "Mobile apps with Flutter from scratch" 
-      },
-      thumbnail: flutterInfo?.thumbnail || "https://images.unsplash.com/photo-1512941937669-90a1b58e7e9c?w=800&q=80",
-      totalVideos: flutterVideos.length,
-      nextcloudShareUrl: ""
-    });
-
-    for (const video of flutterVideos) {
-      await storage.createVideo({
-        courseId: course2.id,
-        title: { tr: video.title, en: video.title },
-        description: { tr: video.description, en: video.description },
-        youtubeId: video.youtubeId,
-        duration: video.duration,
-        sequenceOrder: video.sequenceOrder
-      });
-    }
-    console.log(`Added ${flutterVideos.length} videos for Flutter course`);
+    console.log(`Added ${pythonVideos.length} videos for Python course`);
   }
 
   console.log("Database seeding completed!");
