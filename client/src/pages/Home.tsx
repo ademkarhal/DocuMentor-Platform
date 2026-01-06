@@ -262,44 +262,35 @@ export default function Home() {
                       </div>
                     </div>
                     
-                    <div className="p-5">
-                      <h3 className="font-bold text-lg mb-3 line-clamp-1 group-hover:text-primary transition-colors">
+                    <div className="p-5 flex flex-col">
+                      <h3 className="font-bold text-lg mb-1 line-clamp-1 group-hover:text-primary transition-colors">
                         {getLocalized(course.title)}
                       </h3>
+                      <p className="text-xs text-muted-foreground line-clamp-1 mb-3">
+                        {getLocalized(course.description as { en: string; tr: string })}
+                      </p>
                       
                       {/* Progress stats */}
-                      <div className="grid grid-cols-2 gap-3 text-sm">
+                      <div className="grid grid-cols-2 gap-2 text-sm flex-1">
                         <div className="flex items-center gap-2 text-muted-foreground">
                           <Clock className="w-4 h-4 text-blue-500" />
-                          <div>
-                            <span className="text-foreground font-medium">
-                              {formatDuration(Math.floor(totalDuration / 3600), Math.floor((totalDuration % 3600) / 60))}
-                            </span>
-                            <span className="text-xs ml-1">{lang === 'tr' ? 'toplam' : 'total'}</span>
-                          </div>
+                          <span className="text-foreground font-medium">
+                            {formatDuration(Math.floor(totalDuration / 3600), Math.floor((totalDuration % 3600) / 60))}
+                          </span>
                         </div>
                         <div className="flex items-center gap-2 text-muted-foreground">
                           <Timer className="w-4 h-4 text-green-500" />
-                          <div>
-                            <span className="text-foreground font-medium">
-                              {formatDuration(Math.floor(courseWatchedSeconds / 3600), Math.floor((courseWatchedSeconds % 3600) / 60))}
-                            </span>
-                            <span className="text-xs ml-1">{lang === 'tr' ? 'izlenen' : 'watched'}</span>
-                          </div>
+                          <span className="text-foreground font-medium">
+                            {formatDuration(Math.floor(courseWatchedSeconds / 3600), Math.floor((courseWatchedSeconds % 3600) / 60))}
+                          </span>
                         </div>
                         <div className="flex items-center gap-2 text-muted-foreground">
                           <PlayCircle className="w-4 h-4 text-purple-500" />
-                          <div>
-                            <span className="text-foreground font-medium">{course.totalVideos}</span>
-                            <span className="text-xs ml-1">{lang === 'tr' ? 'video' : 'videos'}</span>
-                          </div>
+                          <span className="text-foreground font-medium">{course.totalVideos} {lang === 'tr' ? 'video' : 'videos'}</span>
                         </div>
                         <div className="flex items-center gap-2 text-muted-foreground">
                           <CheckCircle className="w-4 h-4 text-teal-500" />
-                          <div>
-                            <span className="text-foreground font-medium">{courseCompletedCount}</span>
-                            <span className="text-xs ml-1">{lang === 'tr' ? 'tamamlandı' : 'completed'}</span>
-                          </div>
+                          <span className="text-foreground font-medium">{courseCompletedCount} {lang === 'tr' ? 'tamamlandı' : 'done'}</span>
                         </div>
                       </div>
                       
@@ -454,13 +445,16 @@ export default function Home() {
                       )}
                     </div>
                     
-                    <div className="p-5">
-                      <h3 className="font-bold text-lg mb-3 line-clamp-1 group-hover:text-primary transition-colors">
+                    <div className="p-5 flex flex-col h-full">
+                      <h3 className="font-bold text-lg mb-1 line-clamp-1 group-hover:text-primary transition-colors">
                         {getLocalized(course.title as { en: string; tr: string })}
                       </h3>
+                      <p className="text-xs text-muted-foreground line-clamp-1 mb-3">
+                        {getLocalized(course.description as { en: string; tr: string })}
+                      </p>
                       
-                      {/* Stats */}
-                      <div className="grid grid-cols-2 gap-2 text-sm mb-4">
+                      {/* Stats - fixed height container */}
+                      <div className="grid grid-cols-2 gap-2 text-sm min-h-[52px]">
                         <div className="flex items-center gap-2 text-muted-foreground">
                           <Clock className="w-4 h-4 text-blue-500" />
                           <span className="text-foreground font-medium">
@@ -471,7 +465,7 @@ export default function Home() {
                           <PlayCircle className="w-4 h-4 text-purple-500" />
                           <span className="text-foreground font-medium">{course.totalVideos} {lang === 'tr' ? 'video' : 'videos'}</span>
                         </div>
-                        {hasStarted && (
+                        {hasStarted ? (
                           <>
                             <div className="flex items-center gap-2 text-muted-foreground">
                               <Timer className="w-4 h-4 text-green-500" />
@@ -484,10 +478,21 @@ export default function Home() {
                               <span className="text-foreground font-medium">{courseCompletedCount} {lang === 'tr' ? 'tamamlandı' : 'done'}</span>
                             </div>
                           </>
+                        ) : (
+                          <>
+                            <div className="invisible flex items-center gap-2">
+                              <Timer className="w-4 h-4" />
+                              <span>-</span>
+                            </div>
+                            <div className="invisible flex items-center gap-2">
+                              <CheckCircle className="w-4 h-4" />
+                              <span>-</span>
+                            </div>
+                          </>
                         )}
                       </div>
                       
-                      <div className="pt-3 border-t border-border flex items-center text-sm font-medium text-primary">
+                      <div className="mt-auto pt-3 border-t border-border flex items-center text-sm font-medium text-primary">
                         {hasStarted ? (lang === 'tr' ? 'Devam Et' : 'Continue') : t.viewCourse} 
                         <ArrowRight className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" />
                       </div>
