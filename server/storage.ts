@@ -50,6 +50,7 @@ interface PlaylistConfig {
   slug: string;
   defaultTitle: BilingualText;
   defaultDescription: BilingualText;
+  thumbnail?: string;
 }
 
 interface ConfigData {
@@ -186,6 +187,10 @@ class MemoryStorage {
         const playlistVideos = await fetchPlaylistVideos(playlistId);
         
         if (playlistVideos.length > 0) {
+          const thumbnailUrl = playlist.thumbnail && playlist.thumbnail.trim() !== "" 
+            ? playlist.thumbnail 
+            : (playlistInfo?.thumbnail || "https://images.unsplash.com/photo-1517694712202-14dd9538aa97?w=800&q=80");
+          
           const course: Course = {
             id: courseIdCounter,
             categoryId: playlist.categoryId,
@@ -198,7 +203,7 @@ class MemoryStorage {
               tr: playlistInfo?.description || playlist.defaultDescription.tr,
               en: playlistInfo?.description || playlist.defaultDescription.en
             },
-            thumbnail: playlistInfo?.thumbnail || "https://images.unsplash.com/photo-1517694712202-14dd9538aa97?w=800&q=80",
+            thumbnail: thumbnailUrl,
             totalVideos: playlistVideos.length,
             nextcloudShareUrl: ""
           };

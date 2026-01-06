@@ -35,28 +35,32 @@
       "categoryId": 2,
       "slug": "csharp-course",
       "defaultTitle": { "tr": "C# Programlama", "en": "C# Programming" },
-      "defaultDescription": { "tr": "C# programlama dili ile yazılım geliştirme", "en": "Software development with C# programming language" }
+      "defaultDescription": { "tr": "C# programlama dili ile yazılım geliştirme", "en": "Software development with C# programming language" },
+      "thumbnail": ""
     },
     {
       "url": "https://www.youtube.com/playlist?list=PLQVXoXFVVtp1DFmoTL4cPTWEWiqndKexZ",
       "categoryId": 2,
       "slug": "aspnet-core-course",
       "defaultTitle": { "tr": "ASP.NET Core", "en": "ASP.NET Core" },
-      "defaultDescription": { "tr": "ASP.NET Core ile web geliştirme", "en": "Web development with ASP.NET Core" }
+      "defaultDescription": { "tr": "ASP.NET Core ile web geliştirme", "en": "Web development with ASP.NET Core" },
+      "thumbnail": ""
     },
     {
       "url": "https://www.youtube.com/playlist?list=PLURN6mxdcwL-xIXzq92ZJN9yRW7Q0mjzw",
       "categoryId": 3,
       "slug": "react-course",
       "defaultTitle": { "tr": "React", "en": "React" },
-      "defaultDescription": { "tr": "React ile modern web uygulamaları", "en": "Modern web applications with React" }
+      "defaultDescription": { "tr": "React ile modern web uygulamaları", "en": "Modern web applications with React" },
+      "thumbnail": ""
     },
     {
       "url": "https://www.youtube.com/playlist?list=PLaZoPjR0BnOG9z5aJ4zudiL3TmfaBZ2Qm",
       "categoryId": 4,
       "slug": "nextjs-course",
       "defaultTitle": { "tr": "NextJS 15", "en": "NextJS 15" },
-      "defaultDescription": { "tr": "NextJS 15 ile fullstack geliştirme", "en": "Fullstack development with NextJS 15" }
+      "defaultDescription": { "tr": "NextJS 15 ile fullstack geliştirme", "en": "Fullstack development with NextJS 15" },
+      "thumbnail": ""
     }
   ]
 }
