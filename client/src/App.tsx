@@ -6,6 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/not-found";
 import Home from "@/pages/Home";
 import Courses from "@/pages/Courses";
+import Dashboard from "@/pages/Dashboard";
 import CourseDetail from "@/pages/CourseDetail";
 import { Sidebar } from "@/components/Sidebar";
 import { Header } from "@/components/Header";
@@ -16,6 +17,7 @@ function Router() {
   return (
     <Switch>
       <Route path="/" component={Home} />
+      <Route path="/dashboard" component={Dashboard} />
       <Route path="/courses" component={Courses} />
       <Route path="/courses/:slug" component={CourseDetail} />
       {/* Categories route shares Courses component logic for now, or build separate */}
