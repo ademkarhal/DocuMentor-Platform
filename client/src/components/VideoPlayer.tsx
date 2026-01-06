@@ -218,6 +218,18 @@ export default function VideoPlayer({
           onStateChange: (event) => {
             if (event.data === 1) {
               startProgressTracking();
+            } else if (event.data === 0) {
+              // Video ended - auto advance to next
+              clearProgressInterval();
+              if (!hasCompletedRef.current) {
+                hasCompletedRef.current = true;
+                if (onCompleteRef.current && activeSource) {
+                  onCompleteRef.current(activeSource.id);
+                }
+              }
+              if (activeIndexRef.current < sourcesLengthRef.current - 1 && onVideoChangeRef.current) {
+                setTimeout(() => onVideoChangeRef.current!(activeIndexRef.current + 1), 1000);
+              }
             } else {
               clearProgressInterval();
             }

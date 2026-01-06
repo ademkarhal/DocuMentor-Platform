@@ -38,11 +38,6 @@ export default function Home() {
   const watchedHours = Math.floor(totalWatchedSeconds / 3600);
   const watchedMinutes = Math.floor((totalWatchedSeconds % 3600) / 60);
   
-  const lastWatchedKey = Object.entries(videoProgress)
-    .filter(([_, v]) => v > 0)
-    .sort((a, b) => b[1] - a[1])[0]?.[0];
-  
-  const lastWatchedCourseSlug = lastWatchedKey ? courses?.find(c => lastWatchedKey.startsWith(`${c.id}-`))?.slug : null;
   
   const formatDuration = (hours: number, minutes: number) => {
     if (lang === 'tr') {
@@ -153,14 +148,6 @@ export default function Home() {
             <BarChart3 className="w-6 h-6 text-primary" />
             {lang === 'tr' ? "İlerleme Durumunuz" : "Your Progress"}
           </h2>
-          {lastWatchedCourseSlug && (
-            <Link href={`/courses/${lastWatchedCourseSlug}`}>
-              <Button variant="outline" size="sm" className="gap-2" data-testid="button-continue-watching">
-                <Play className="w-4 h-4" />
-                {lang === 'tr' ? "Kaldığım Yerden Devam Et" : "Continue Watching"}
-              </Button>
-            </Link>
-          )}
         </div>
         
         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
@@ -214,7 +201,76 @@ export default function Home() {
           </CardContent>
         </Card>
 
-        {stats.watchedCount === 0 && (
+        {/* Netflix-style Continue Watching */}
+        {stats.startedCourses.length > 0 ? (
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold flex items-center gap-2">
+              <Play className="w-5 h-5 text-primary" />
+              {lang === 'tr' ? "Kaldığım Yerden Devam Et" : "Continue Watching"}
+            </h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {courses?.filter(c => stats.startedCourses.includes(c.id)).slice(0, 3).map(course => {
+                const courseCompletedCount = Object.keys(completedVideos).filter(key => key.startsWith(`${course.id}-`)).length;
+                const courseWatchedSeconds = Object.entries(videoProgress)
+                  .filter(([key]) => key.startsWith(`${course.id}-`))
+                  .reduce((sum, [_, sec]) => sum + (sec || 0), 0);
+                const percent = course.totalVideos ? Math.round((courseCompletedCount / course.totalVideos) * 100) : 0;
+                
+                return (
+                  <Link 
+                    key={course.id} 
+                    href={`/courses/${course.slug}`}
+                    className="group relative rounded-xl overflow-hidden bg-card border border-border hover:border-primary/50 transition-all hover:shadow-lg hover:shadow-primary/10"
+                    data-testid={`card-continue-${course.id}`}
+                  >
+                    <div className="aspect-video relative">
+                      <img 
+                        src="https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=600&q=80" 
+                        alt={getLocalized(course.title)}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
+                      
+                      {/* Play button overlay */}
+                      <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                        <div className="w-14 h-14 rounded-full bg-primary flex items-center justify-center shadow-xl">
+                          <Play className="w-6 h-6 text-primary-foreground fill-current ml-1" />
+                        </div>
+                      </div>
+                      
+                      {/* Progress bar */}
+                      <div className="absolute bottom-0 left-0 right-0">
+                        <div className="h-1 bg-white/20">
+                          <div 
+                            className="h-full bg-primary transition-all"
+                            style={{ width: `${percent}%` }}
+                          />
+                        </div>
+                      </div>
+                      
+                      {/* Info overlay */}
+                      <div className="absolute bottom-3 left-3 right-3">
+                        <h4 className="text-white font-semibold text-sm truncate mb-1">
+                          {getLocalized(course.title)}
+                        </h4>
+                        <div className="flex items-center gap-2 text-white/80 text-xs">
+                          <span className="font-medium text-primary">%{percent}</span>
+                          <span>|</span>
+                          <span>{courseCompletedCount}/{course.totalVideos} {lang === 'tr' ? 'video' : 'videos'}</span>
+                          <span>|</span>
+                          <span className="flex items-center gap-1">
+                            <Clock className="w-3 h-3" />
+                            {formatDuration(Math.floor(courseWatchedSeconds / 3600), Math.floor((courseWatchedSeconds % 3600) / 60))}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
+        ) : (
           <Card className="border-dashed border-2 border-primary/30 bg-primary/5">
             <CardContent className="p-6 text-center">
               <PlayCircle className="w-12 h-12 text-primary/50 mx-auto mb-3" />
