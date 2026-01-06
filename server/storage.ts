@@ -1,8 +1,8 @@
 import { db } from "./db";
 import {
-  categories, courses, videos, documents,
-  type Category, type Course, type Video, type Document,
-  type InsertCategory, type InsertCourse, type InsertVideo, type InsertDocument
+  categories, courses, videos, documents, userProgress,
+  type Category, type Course, type Video, type Document, type UserProgress,
+  type InsertCategory, type InsertCourse, type InsertVideo, type InsertDocument, type InsertUserProgress
 } from "@shared/schema";
 import { eq, ilike, sql, or } from "drizzle-orm";
 
@@ -16,6 +16,9 @@ export interface IStorage {
   
   getVideosByCourse(courseId: number): Promise<Video[]>;
   getDocumentsByCourse(courseId: number): Promise<Document[]>;
+  
+  getUserProgress(courseId: number): Promise<UserProgress[]>;
+  upsertUserProgress(progress: InsertUserProgress): Promise<UserProgress>;
   
   searchContent(query: string): Promise<any[]>;
   
@@ -58,6 +61,30 @@ export class DatabaseStorage implements IStorage {
 
   async getDocumentsByCourse(courseId: number): Promise<Document[]> {
     return await db.select().from(documents).where(eq(documents.courseId, courseId));
+  }
+
+  async getUserProgress(courseId: number): Promise<UserProgress[]> {
+    return await db.select().from(userProgress).where(eq(userProgress.courseId, courseId));
+  }
+
+  async upsertUserProgress(progress: InsertUserProgress): Promise<UserProgress> {
+    const [existing] = await db.select().from(userProgress)
+      .where(sql`${userProgress.courseId} = ${progress.courseId} AND ${userProgress.videoId} = ${progress.videoId}`);
+    
+    if (existing) {
+      const [updated] = await db.update(userProgress)
+        .set({ 
+          lastPosition: progress.lastPosition, 
+          isCompleted: progress.isCompleted,
+          updatedAt: new Date()
+        })
+        .where(eq(userProgress.id, existing.id))
+        .returning();
+      return updated;
+    }
+
+    const [inserted] = await db.insert(userProgress).values(progress).returning();
+    return inserted;
   }
 
   async searchContent(query: string): Promise<any[]> {

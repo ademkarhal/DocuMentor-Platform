@@ -40,6 +40,16 @@ export async function registerRoutes(
     res.json(docs);
   });
 
+  app.get("/api/courses/:id/progress", async (req, res) => {
+    const progress = await storage.getUserProgress(parseInt(req.params.id));
+    res.json(progress);
+  });
+
+  app.post("/api/progress", async (req, res) => {
+    const progress = await storage.upsertUserProgress(req.body);
+    res.json(progress);
+  });
+
   app.get(api.search.query.path, async (req, res) => {
     const q = req.query.q as string;
     if (!q) return res.json([]);

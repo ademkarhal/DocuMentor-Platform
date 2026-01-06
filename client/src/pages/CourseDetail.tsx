@@ -1,11 +1,13 @@
 import { useCourse, useCourseVideos, useCourseDocuments } from "@/hooks/use-api";
 import { useTranslation, useStore } from "@/hooks/use-store";
 import { useRoute, useLocation } from "wouter";
-import { useState, useEffect } from "react";
-// import ReactPlayer from "react-player";
+import { useState, useEffect, useRef } from "react";
+import ReactPlayer from "react-player/youtube";
 import { CheckCircle2, Circle, FileText, Download, Play, Clock } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useQuery } from "@tanstack/react-query";
 
 export default function CourseDetail() {
   const [, params] = useRoute("/courses/:slug");
@@ -13,13 +15,19 @@ export default function CourseDetail() {
   const slug = params?.slug || "";
   
   const { t, getLocalized } = useTranslation();
-  const { markVideoComplete, isVideoComplete, videoProgress, setVideoProgress } = useStore();
+  const playerRef = useRef<ReactPlayer>(null);
   
   const { data: course, isLoading: courseLoading } = useCourse(slug);
   const { data: videos, isLoading: videosLoading } = useCourseVideos(course?.id);
   const { data: documents } = useCourseDocuments(course?.id);
+  
+  const { data: progressData } = useQuery<any[]>({
+    queryKey: [`/api/courses/${course?.id}/progress`],
+    enabled: !!course?.id,
+  });
 
   const [activeVideoId, setActiveVideoId] = useState<number | null>(null);
+  const [isReady, setIsReady] = useState(false);
 
   useEffect(() => {
     if (videos && videos.length > 0 && !activeVideoId) {
@@ -45,42 +53,72 @@ export default function CourseDetail() {
   if (!course) return <div className="p-12 text-center text-muted-foreground">Course not found</div>;
 
   const activeVideo = videos?.find(v => v.id === activeVideoId);
-  const lastTime = activeVideo ? videoProgress[`${course.id}-${activeVideo.id}`] || 0 : 0;
-
-  const handleVideoComplete = () => {
-    if (course && activeVideoId) {
-      markVideoComplete(course.id, activeVideoId);
-    }
+  const currentProgress = progressData?.find((p: any) => p.videoId === activeVideoId);
+  
+  const handleProgress = (state: { playedSeconds: number }) => {
+    if (!activeVideo || !course) return;
+    
+    const isCompleted = state.playedSeconds / activeVideo.duration > 0.9;
+    
+    apiRequest("POST", "/api/progress", {
+      courseId: course.id,
+      videoId: activeVideo.id,
+      lastPosition: Math.floor(state.playedSeconds),
+      isCompleted: isCompleted || currentProgress?.isCompleted || false
+    }).then(() => {
+      queryClient.invalidateQueries({ queryKey: [`/api/courses/${course.id}/progress`] });
+    });
   };
 
-  // Video progress handling via postMessage or just periodic updates
-  // For simplicity with iframe, we'll assume progress is tracked locally on time updates if using a proper SDK
-  // but here we will simulate with a basic local save mechanism when they switch or complete.
-  
+  const handleVideoComplete = () => {
+    if (!activeVideo || !course) return;
+    apiRequest("POST", "/api/progress", {
+      courseId: course.id,
+      videoId: activeVideo.id,
+      lastPosition: activeVideo.duration,
+      isCompleted: true
+    }).then(() => {
+      queryClient.invalidateQueries({ queryKey: [`/api/courses/${course.id}/progress`] });
+    });
+  };
+
   const getProgress = (vId: number) => {
-    if (isVideoComplete(course.id, vId)) return 100;
-    const current = videoProgress[`${course.id}-${vId}`] || 0;
-    const duration = videos?.find(v => v.id === vId)?.duration || 1;
-    return Math.min(Math.round((current / duration) * 100), 99);
+    const p = progressData?.find((p: any) => p.videoId === vId);
+    if (p?.isCompleted) return 100;
+    const video = videos?.find(v => v.id === vId);
+    if (!p || !video) return 0;
+    return Math.min(Math.round((p.lastPosition / video.duration) * 100), 99);
+  };
+
+  const isVideoCompleted = (vId: number) => {
+    return !!progressData?.find((p: any) => p.videoId === vId)?.isCompleted;
   };
 
   return (
     <div className="max-w-7xl mx-auto pb-12 h-[calc(100vh-5rem)] flex flex-col lg:flex-row gap-6">
-      {/* Main Content Area */}
       <div className="flex-1 flex flex-col min-h-0 overflow-y-auto pr-2">
-        {/* Video Player */}
         <div className="aspect-video bg-black rounded-2xl overflow-hidden shadow-2xl shadow-black/20 mb-6 shrink-0 relative">
           {activeVideo ? (
-            <iframe
+            <ReactPlayer
+              ref={playerRef}
+              url={`https://www.youtube.com/watch?v=${activeVideo.youtubeId}`}
               width="100%"
               height="100%"
-              src={`https://www.youtube.com/embed/${activeVideo.youtubeId}?enablejsapi=1&start=${Math.floor(lastTime)}`}
-              title={getLocalized(activeVideo.title)}
-              frameBorder="0"
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-              allowFullScreen
-              className="absolute inset-0 w-full h-full"
-            ></iframe>
+              controls
+              onProgress={handleProgress}
+              onReady={() => {
+                if (currentProgress?.lastPosition && !isReady) {
+                  playerRef.current?.seekTo(currentProgress.lastPosition);
+                  setIsReady(true);
+                }
+              }}
+              onStart={() => setIsReady(true)}
+              config={{
+                youtube: {
+                  playerVars: { showinfo: 1 }
+                }
+              }}
+            />
           ) : (
             <div className="w-full h-full flex items-center justify-center text-white/50">
               Select a video to start learning
@@ -88,13 +126,12 @@ export default function CourseDetail() {
           )}
         </div>
 
-        {/* Video Info */}
         <div className="space-y-6">
           <div className="flex items-start justify-between gap-4">
             <div>
-              <h1 className="text-2xl font-bold font-display mb-2">{activeVideo ? getLocalized(activeVideo.title) : getLocalized(course.title)}</h1>
+              <h1 className="text-2xl font-bold font-display mb-2">{activeVideo ? getLocalized(activeVideo.title as any) : getLocalized(course.title as any)}</h1>
               <p className="text-muted-foreground leading-relaxed">
-                {activeVideo ? getLocalized(activeVideo.description) : getLocalized(course.description)}
+                {activeVideo ? getLocalized(activeVideo.description as any) : getLocalized(course.description as any)}
               </p>
             </div>
             {activeVideo && (
@@ -102,12 +139,12 @@ export default function CourseDetail() {
                 onClick={handleVideoComplete}
                 className={cn(
                   "flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-colors border",
-                  isVideoComplete(course.id, activeVideo.id)
+                  currentProgress?.isCompleted
                     ? "bg-green-100 text-green-700 border-green-200 dark:bg-green-900/30 dark:text-green-400 dark:border-green-800"
                     : "bg-background text-muted-foreground border-border hover:bg-muted"
                 )}
               >
-                {isVideoComplete(course.id, activeVideo.id) ? (
+                {currentProgress?.isCompleted ? (
                   <>
                     <CheckCircle2 className="w-4 h-4" /> {t.completed}
                   </>
@@ -140,7 +177,7 @@ export default function CourseDetail() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="font-medium text-sm truncate group-hover:text-primary transition-colors">
-                        {getLocalized(doc.title)}
+                        {getLocalized(doc.title as any)}
                       </p>
                       <p className="text-xs text-muted-foreground uppercase">{doc.fileType}</p>
                     </div>
@@ -158,12 +195,12 @@ export default function CourseDetail() {
         <div className="p-4 border-b border-border bg-muted/20 rounded-t-2xl">
           <h2 className="font-bold text-lg">{t.courseContent}</h2>
           <p className="text-xs text-muted-foreground mt-1">
-            {videos?.filter(v => isVideoComplete(course.id, v.id)).length} / {videos?.length} {t.completed}
+            {videos?.filter(v => isVideoCompleted(v.id)).length} / {videos?.length} {t.completed}
           </p>
           <div className="h-1 w-full bg-border rounded-full mt-3 overflow-hidden">
             <div 
               className="h-full bg-primary transition-all duration-500"
-              style={{ width: `${(videos?.filter(v => isVideoComplete(course.id, v.id)).length || 0) / (videos?.length || 1) * 100}%` }}
+              style={{ width: `${(videos?.filter(v => isVideoCompleted(v.id)).length || 0) / (videos?.length || 1) * 100}%` }}
             />
           </div>
         </div>
@@ -171,7 +208,7 @@ export default function CourseDetail() {
         <div className="flex-1 overflow-y-auto p-2 space-y-1 custom-scrollbar">
           {videos?.sort((a,b) => a.sequenceOrder - b.sequenceOrder).map((video, index) => {
             const isActive = activeVideoId === video.id;
-            const isCompleted = isVideoComplete(course.id, video.id);
+            const isCompleted = isVideoCompleted(video.id);
 
             return (
               <button

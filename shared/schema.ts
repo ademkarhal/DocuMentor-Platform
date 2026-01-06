@@ -56,11 +56,15 @@ export type InsertCourse = z.infer<typeof insertCourseSchema>;
 export type InsertVideo = z.infer<typeof insertVideoSchema>;
 export type InsertDocument = z.infer<typeof insertDocumentSchema>;
 
-// API Response types
-export type SearchResult = {
-  type: 'course' | 'video';
-  id: number;
-  title: { tr: string, en: string };
-  url: string;
-  relevance: number;
-};
+export const userProgress = pgTable("user_progress", {
+  id: serial("id").primaryKey(),
+  courseId: integer("course_id").references(() => courses.id).notNull(),
+  videoId: integer("video_id").references(() => videos.id).notNull(),
+  lastPosition: integer("last_position").default(0), // in seconds
+  isCompleted: boolean("is_completed").default(false),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertUserProgressSchema = createInsertSchema(userProgress).omit({ id: true, updatedAt: true });
+export type UserProgress = typeof userProgress.$inferSelect;
+export type InsertUserProgress = z.infer<typeof insertUserProgressSchema>;
