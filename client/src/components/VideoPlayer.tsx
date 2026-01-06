@@ -199,7 +199,7 @@ export default function VideoPlayer({
       playerRef.current = new window.YT.Player(containerIdRef.current, {
         videoId: activeSource.youtubeId,
         playerVars: {
-          autoplay: 1,
+          autoplay: 0,
           rel: 0,
           modestbranding: 1,
           iv_load_policy: 3,

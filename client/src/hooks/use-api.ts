@@ -172,12 +172,44 @@ export function useCourseDocuments(courseId: number | undefined) {
   });
 }
 
-// Search - no caching for search
+// Search - uses localStorage cached data first, falls back to API
 export function useSearch(query: string) {
   return useQuery<SearchResponse>({
     queryKey: [api.search.query.path, query],
     queryFn: async () => {
       if (!query || query.length < 2) return [];
+      
+      const searchTerm = query.toLowerCase().trim();
+      const results: SearchResponse = [];
+      
+      // Try to search from cached courses first
+      const cachedCourses = getFromCache('courses') as CourseListResponse | null;
+      if (cachedCourses) {
+        cachedCourses.forEach(course => {
+          const titleEn = (course.title as { en: string; tr: string })?.en?.toLowerCase() || '';
+          const titleTr = (course.title as { en: string; tr: string })?.tr?.toLowerCase() || '';
+          const descEn = (course.description as { en: string; tr: string })?.en?.toLowerCase() || '';
+          const descTr = (course.description as { en: string; tr: string })?.tr?.toLowerCase() || '';
+          
+          if (titleEn.includes(searchTerm) || titleTr.includes(searchTerm) || 
+              descEn.includes(searchTerm) || descTr.includes(searchTerm)) {
+            results.push({
+              type: 'course' as const,
+              id: course.id,
+              title: course.title,
+              url: `/courses/${course.slug}`,
+              relevance: 1
+            });
+          }
+        });
+      }
+      
+      // If we have cached results, return them
+      if (results.length > 0 || cachedCourses) {
+        return results;
+      }
+      
+      // Fall back to API if no cache
       const url = `${api.search.query.path}?q=${encodeURIComponent(query)}`;
       const res = await fetch(url);
       if (!res.ok) throw new Error("Search failed");
