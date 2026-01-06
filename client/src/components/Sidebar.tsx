@@ -3,12 +3,16 @@ import { Compass, Home, MonitorPlay, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTranslation, useStore } from "@/hooks/use-store";
 import { useCategories } from "@/hooks/use-api";
-import logoImage from "@assets/generated_images/technotrade_horizontal_corporate_logo.png";
+import logoLight from "@assets/generated_images/technotrade_academy_corporate_logo.png";
+import logoDark from "@assets/generated_images/technotrade_academy_white_logo.png";
 
 export function Sidebar({ className }: { className?: string }) {
   const [location] = useLocation();
   const { t, getLocalized, lang } = useTranslation();
+  const { theme } = useStore();
   const { data: categories } = useCategories();
+  
+  const logoImage = theme === 'dark' ? logoDark : logoLight;
 
   const isActive = (path: string) => location === path;
   
@@ -60,11 +64,11 @@ export function Sidebar({ className }: { className?: string }) {
       <div className="mt-auto p-6 border-t border-border bg-muted/20">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center text-white font-bold text-sm shadow-md">
-            G
+            {lang === 'tr' ? 'M' : 'G'}
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium truncate">Guest User</p>
-            <p className="text-xs text-muted-foreground truncate">Public Access</p>
+            <p className="text-sm font-medium truncate">{lang === 'tr' ? 'Misafir Kullanıcı' : 'Guest User'}</p>
+            <p className="text-xs text-muted-foreground truncate">{lang === 'tr' ? 'Genel Erişim' : 'Public Access'}</p>
           </div>
         </div>
       </div>
