@@ -96,8 +96,14 @@ export default function VideoPlayer({
   const hasCompletedRef = useRef<boolean>(false);
   const containerIdRef = useRef<string>(`yt-player-${Math.random().toString(36).substr(2, 9)}`);
   const lastVideoIdRef = useRef<number | null>(null);
+  const initialPositionRef = useRef<number>(initialPosition);
 
   const activeSource = sources[activeIndex];
+  
+  // Only update initialPositionRef when video changes
+  if (activeSource && lastVideoIdRef.current !== activeSource.id) {
+    initialPositionRef.current = initialPosition;
+  }
 
   const clearProgressInterval = useCallback(() => {
     if (progressIntervalRef.current) {
@@ -202,7 +208,7 @@ export default function VideoPlayer({
           rel: 0,
           modestbranding: 1,
           iv_load_policy: 3,
-          start: Math.floor(initialPosition),
+          start: Math.floor(initialPositionRef.current),
           origin: window.location.origin,
         },
         events: {
@@ -233,7 +239,7 @@ export default function VideoPlayer({
         playerRef.current = null;
       }
     };
-  }, [activeSource?.id, initialPosition, clearProgressInterval]);
+  }, [activeSource?.id, clearProgressInterval]);
 
   if (!activeSource) {
     return (
