@@ -155,19 +155,9 @@ class MemoryStorage {
     this.courses = [];
     this.videos = [];
 
-    // Hierarchical categories
-    // Main category: Yazılım Geliştirme
+    // Hierarchical categories - Takip 7/24 as main parent
     this.categories.push({
       id: 1,
-      slug: "software-development",
-      title: { tr: "Yazılım Geliştirme", en: "Software Development" },
-      icon: "code",
-      parentId: null
-    });
-
-    // Main category: Takip 7/24 (parent group)
-    this.categories.push({
-      id: 2,
       slug: "takip-724",
       title: { tr: "Takip 7/24", en: "Takip 7/24" },
       icon: "monitor",
@@ -176,11 +166,19 @@ class MemoryStorage {
 
     // Sub-categories under Takip 7/24
     this.categories.push({
+      id: 2,
+      slug: "yazilim-gelistirme",
+      title: { tr: "Yazılım Geliştirme", en: "Software Development" },
+      icon: "code",
+      parentId: 1
+    });
+
+    this.categories.push({
       id: 3,
       slug: "musteri-paneli",
       title: { tr: "Müşteri Paneli", en: "Customer Panel" },
       icon: "users",
-      parentId: 2
+      parentId: 1
     });
 
     this.categories.push({
@@ -188,7 +186,7 @@ class MemoryStorage {
       slug: "genel-yonetim-paneli",
       title: { tr: "Genel Yönetim Paneli", en: "General Management Panel" },
       icon: "settings",
-      parentId: 2
+      parentId: 1
     });
 
     this.categories.push({
@@ -196,11 +194,11 @@ class MemoryStorage {
       slug: "mobil-uygulama",
       title: { tr: "Mobil Uygulama", en: "Mobile Application" },
       icon: "smartphone",
-      parentId: 2
+      parentId: 1
     });
 
-    // Category assignments for courses (distribute across categories)
-    const categoryAssignments = [1, 3, 4, 5]; // C# -> Software Dev, ASP.NET -> Customer Panel, React -> Management Panel, NextJS -> Mobile App
+    // Category assignments for courses
+    const categoryAssignments = [2, 3, 4, 5]; // C# -> Yazılım Geliştirme, ASP.NET -> Müşteri Paneli, React -> Genel Yönetim, NextJS -> Mobil
 
     let videoIdCounter = 1;
 

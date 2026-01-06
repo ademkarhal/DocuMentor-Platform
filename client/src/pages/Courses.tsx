@@ -4,11 +4,21 @@ import { Link } from "wouter";
 import { PlayCircle, ArrowRight, Clock, Timer, CheckCircle } from "lucide-react";
 import { motion } from "framer-motion";
 
-export default function Courses() {
+interface CoursesProps {
+  categorySlug?: string;
+}
+
+export default function Courses({ categorySlug }: CoursesProps) {
   const { t, getLocalized, lang } = useTranslation();
-  const { data: courses, isLoading } = useCourses();
+  const { data: allCourses, isLoading } = useCourses();
   const { data: categories } = useCategories();
   const { videoProgress, completedVideos } = useStore();
+  
+  // Filter courses by category if categorySlug is provided
+  const selectedCategory = categorySlug ? categories?.find(c => c.slug === categorySlug) : null;
+  const courses = categorySlug && selectedCategory
+    ? allCourses?.filter(c => c.categoryId === selectedCategory.id)
+    : allCourses;
 
   const container = {
     hidden: { opacity: 0 },
@@ -41,15 +51,24 @@ export default function Courses() {
     return { watchedSeconds, completedCount, totalSeconds, percent };
   };
 
+  // Get page title based on category
+  const pageTitle = selectedCategory 
+    ? getLocalized(selectedCategory.title as { en: string; tr: string })
+    : t.courses;
+  
+  const pageDescription = selectedCategory
+    ? (lang === 'en' 
+        ? `Courses in ${getLocalized(selectedCategory.title as { en: string; tr: string })} category.`
+        : `${getLocalized(selectedCategory.title as { en: string; tr: string })} kategorisindeki kurslar.`)
+    : (lang === 'en' 
+        ? "Explore our complete catalog of educational content." 
+        : "Eğitim içeriği kataloğumuzun tamamını keşfedin.");
+
   return (
     <div className="max-w-7xl mx-auto pb-12">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold font-display text-foreground">{t.courses}</h1>
-        <p className="text-muted-foreground mt-2">
-          {lang === 'en' 
-            ? "Explore our complete catalog of educational content." 
-            : "Eğitim içeriği kataloğumuzun tamamını keşfedin."}
-        </p>
+        <h1 className="text-3xl font-bold font-display text-foreground">{pageTitle}</h1>
+        <p className="text-muted-foreground mt-2">{pageDescription}</p>
       </div>
 
       {isLoading ? (

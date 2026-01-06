@@ -20,9 +20,9 @@ function Router() {
       <Route path="/dashboard" component={Dashboard} />
       <Route path="/courses" component={Courses} />
       <Route path="/courses/:slug" component={CourseDetail} />
-      {/* Categories route shares Courses component logic for now, or build separate */}
+      {/* Categories route - filter courses by category */}
       <Route path="/categories/:slug">
-        {(params) => <Courses />} 
+        {(params) => <Courses categorySlug={params.slug} />} 
       </Route> 
       <Route component={NotFound} />
     </Switch>
