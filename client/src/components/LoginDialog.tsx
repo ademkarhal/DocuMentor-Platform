@@ -47,8 +47,8 @@ export function LoginDialog({ open, onOpenChange, onSuccess, authUrl }: LoginDia
         setUsername("");
         setPassword("");
         setError(false);
-        onOpenChange(false);
         onSuccess?.();
+        onOpenChange(false);
       } else {
         setError(true);
       }
