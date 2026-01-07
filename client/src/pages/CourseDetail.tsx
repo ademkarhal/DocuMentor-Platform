@@ -1,6 +1,6 @@
 import { useCourse, useCourseVideos, useCourseDocuments, useCategories } from "@/hooks/use-api";
 import { useTranslation, useStore } from "@/hooks/use-store";
-import { useRoute, useSearch } from "wouter";
+import { useRoute, useSearch, useLocation } from "wouter";
 import { useState, useCallback, useEffect } from "react";
 import { CheckCircle2, FileText, Download, Play, Clock, Timer, Hourglass, FileSpreadsheet, FileDown, BookOpen, MessageCircle, Bell, FolderOpen, PlayCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -11,19 +11,34 @@ import XLSX from "xlsx-js-style";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { robotoBase64 } from "@/assets/roboto-font";
+import { LoginDialog } from "@/components/LoginDialog";
 
 export default function CourseDetail() {
   const [, params] = useRoute("/courses/:slug");
   const slug = params?.slug || "";
   const searchParams = useSearch();
+  const [, navigate] = useLocation();
   
   const { t, getLocalized, lang } = useTranslation();
-  const { markVideoComplete, markVideoWatched, setVideoProgress, videoProgress, isVideoComplete } = useStore();
+  const { markVideoComplete, markVideoWatched, setVideoProgress, videoProgress, isVideoComplete, isAuthenticated } = useStore();
   
   const { data: course, isLoading: courseLoading } = useCourse(slug);
   const { data: videos, isLoading: videosLoading } = useCourseVideos(course?.id);
   const { data: documents } = useCourseDocuments(course?.id);
   const { data: categories } = useCategories();
+  
+  const [loginDialogOpen, setLoginDialogOpen] = useState(false);
+  
+  // Check if course category is protected
+  const courseCategory = course?.categoryId ? categories?.find(c => c.id === course.categoryId) : null;
+  const isProtected = (courseCategory as any)?.protected && !isAuthenticated;
+  
+  // Show login dialog if protected and not authenticated
+  useEffect(() => {
+    if (course && categories && isProtected) {
+      setLoginDialogOpen(true);
+    }
+  }, [course, categories, isProtected]);
 
   const getCategoryPath = (categoryId: number | undefined) => {
     if (!categoryId || !categories) return '';
@@ -338,6 +353,29 @@ export default function CourseDetail() {
   }
 
   if (!course) return <div className="p-12 text-center text-muted-foreground">Kurs bulunamadi</div>;
+
+  // If protected and not authenticated, show login dialog overlay
+  if (isProtected) {
+    return (
+      <div className="max-w-7xl mx-auto p-12 text-center">
+        <div className="text-muted-foreground mb-4">
+          {lang === 'tr' ? 'Bu kurs korumalıdır. Erişmek için giriş yapmanız gerekmektedir.' : 'This course is protected. Please login to access.'}
+        </div>
+        <LoginDialog 
+          open={loginDialogOpen} 
+          onOpenChange={(open) => {
+            setLoginDialogOpen(open);
+            if (!open) {
+              navigate('/courses');
+            }
+          }}
+        />
+        <Button onClick={() => setLoginDialogOpen(true)} data-testid="button-show-login">
+          {t.login}
+        </Button>
+      </div>
+    );
+  }
 
   const handleVideoSelect = (vId: number) => {
     const index = sortedVideos.findIndex(v => v.id === vId);
@@ -686,6 +724,16 @@ export default function CourseDetail() {
           })}
         </div>
       </div>
+      
+      <LoginDialog 
+        open={loginDialogOpen} 
+        onOpenChange={(open) => {
+          setLoginDialogOpen(open);
+          if (!open && isProtected) {
+            navigate('/courses');
+          }
+        }}
+      />
     </div>
   );
 }
