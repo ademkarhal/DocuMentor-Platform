@@ -1,8 +1,10 @@
 import { useCourses, useCategories } from "@/hooks/use-api";
 import { useTranslation, useStore } from "@/hooks/use-store";
-import { Link } from "wouter";
-import { PlayCircle, ArrowRight, Clock, Timer, CheckCircle } from "lucide-react";
+import { Link, useLocation } from "wouter";
+import { PlayCircle, ArrowRight, Clock, Timer, CheckCircle, Lock } from "lucide-react";
 import { motion } from "framer-motion";
+import { useState } from "react";
+import { LoginDialog } from "@/components/LoginDialog";
 
 interface CoursesProps {
   categorySlug?: string;
@@ -12,7 +14,10 @@ export default function Courses({ categorySlug }: CoursesProps) {
   const { t, getLocalized, lang } = useTranslation();
   const { data: allCourses, isLoading } = useCourses();
   const { data: categories } = useCategories();
-  const { videoProgress, completedVideos } = useStore();
+  const { videoProgress, completedVideos, isAuthenticated } = useStore();
+  const [, navigate] = useLocation();
+  const [loginDialogOpen, setLoginDialogOpen] = useState(false);
+  const [pendingCourseSlug, setPendingCourseSlug] = useState<string | null>(null);
   
   // Filter courses by category if categorySlug is provided
   const selectedCategory = categorySlug ? categories?.find(c => c.slug === categorySlug) : null;
@@ -94,10 +99,22 @@ export default function Courses({ categorySlug }: CoursesProps) {
               ? `${getLocalized(parentCategory.title as { en: string; tr: string })} / ${getLocalized(courseCategory?.title as { en: string; tr: string })}`
               : getLocalized(courseCategory?.title as { en: string; tr: string });
             
+            // Check if course category is protected
+            const isProtected = (courseCategory as any)?.protected && !isAuthenticated;
+            
+            const handleCourseClick = (e: React.MouseEvent) => {
+              if (isProtected) {
+                e.preventDefault();
+                setPendingCourseSlug(course.slug);
+                setLoginDialogOpen(true);
+              }
+            };
+            
             return (
               <motion.div key={course.id} variants={item}>
                 <Link 
                   href={`/courses/${course.slug}`}
+                  onClick={handleCourseClick}
                   className="flex flex-col h-full bg-card rounded-2xl border border-border overflow-hidden hover:shadow-xl hover:shadow-black/5 hover:border-primary/30 transition-all duration-300 group"
                   data-testid={`card-course-${course.id}`}
                 >
@@ -109,10 +126,15 @@ export default function Courses({ categorySlug }: CoursesProps) {
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                     />
                     {/* Category badge */}
-                    <div className="absolute top-3 left-3 z-20">
+                    <div className="absolute top-3 left-3 z-20 flex items-center gap-2">
                       <span className="px-2 py-1 rounded-md bg-black/60 text-white text-xs font-medium backdrop-blur-sm">
                         {categoryLabel}
                       </span>
+                      {isProtected && (
+                        <span className="p-1.5 rounded-md bg-amber-500/90 text-white backdrop-blur-sm" title={t.protectedCourse}>
+                          <Lock className="w-3.5 h-3.5" />
+                        </span>
+                      )}
                     </div>
                     <div className="absolute bottom-3 left-3 right-3 z-20 flex items-center justify-between text-white/90 text-xs font-medium">
                       <div className="flex items-center gap-1">
@@ -189,6 +211,17 @@ export default function Courses({ categorySlug }: CoursesProps) {
           })}
         </motion.div>
       )}
+      
+      <LoginDialog 
+        open={loginDialogOpen} 
+        onOpenChange={setLoginDialogOpen}
+        onSuccess={() => {
+          if (pendingCourseSlug) {
+            navigate(`/courses/${pendingCourseSlug}`);
+            setPendingCourseSlug(null);
+          }
+        }}
+      />
     </div>
   );
 }

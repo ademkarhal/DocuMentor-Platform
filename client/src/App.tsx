@@ -12,6 +12,7 @@ import { Sidebar } from "@/components/Sidebar";
 import { Header } from "@/components/Header";
 import { useStore } from "@/hooks/use-store";
 import { useEffect } from "react";
+import { cn } from "@/lib/utils";
 
 function Router() {
   return (
@@ -20,7 +21,6 @@ function Router() {
       <Route path="/dashboard" component={Dashboard} />
       <Route path="/courses" component={Courses} />
       <Route path="/courses/:slug" component={CourseDetail} />
-      {/* Categories route - filter courses by category */}
       <Route path="/categories/:slug">
         {(params) => <Courses categorySlug={params.slug} />} 
       </Route> 
@@ -30,7 +30,7 @@ function Router() {
 }
 
 function App() {
-  const { theme } = useStore();
+  const { theme, sidebarOpen } = useStore();
 
   useEffect(() => {
     if (theme === 'dark') {
@@ -44,8 +44,10 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
         <div className="flex h-screen w-full bg-background overflow-hidden">
-          {/* Sidebar - hidden on mobile, visible on lg */}
-          <Sidebar className="hidden lg:flex w-64 shrink-0" />
+          <Sidebar className={cn(
+            "hidden lg:flex shrink-0 transition-all duration-300",
+            sidebarOpen ? "w-64" : "w-16"
+          )} />
           
           <div className="flex-1 flex flex-col h-full overflow-hidden relative">
             <Header />
