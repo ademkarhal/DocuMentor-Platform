@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils";
 import VideoPlayer from "@/components/VideoPlayer";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import * as XLSX from "xlsx";
+import XLSX from "xlsx-js-style";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 
@@ -172,6 +172,17 @@ export default function CourseDetail() {
       { wch: 12 }
     ];
 
+    const headerCells = ['A1', 'B1', 'C1', 'D1', 'E1', 'F1', 'G1', 'H1', 'I1'];
+    headerCells.forEach(cell => {
+      if (ws[cell]) {
+        ws[cell].s = { 
+          font: { bold: true, color: { rgb: "FFFFFF" } }, 
+          fill: { patternType: "solid", fgColor: { rgb: "3B82F6" } },
+          alignment: { horizontal: "center", vertical: "center" }
+        };
+      }
+    });
+
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'Kurs Icerigi');
     
@@ -186,6 +197,17 @@ export default function CourseDetail() {
     ];
     const summaryWs = XLSX.utils.json_to_sheet(summaryData);
     summaryWs['!cols'] = [{ wch: 20 }, { wch: 40 }];
+    
+    ['A1', 'B1'].forEach(cell => {
+      if (summaryWs[cell]) {
+        summaryWs[cell].s = { 
+          font: { bold: true, color: { rgb: "FFFFFF" } }, 
+          fill: { patternType: "solid", fgColor: { rgb: "3B82F6" } },
+          alignment: { horizontal: "center", vertical: "center" }
+        };
+      }
+    });
+    
     XLSX.utils.book_append_sheet(wb, summaryWs, 'Ozet');
 
     XLSX.writeFile(wb, `${course.slug}-kurs-icerigi.xlsx`);
