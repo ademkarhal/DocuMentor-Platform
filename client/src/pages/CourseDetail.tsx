@@ -1,4 +1,4 @@
-import { useCourse, useCourseVideos, useCourseDocuments } from "@/hooks/use-api";
+import { useCourse, useCourseVideos, useCourseDocuments, useCategories } from "@/hooks/use-api";
 import { useTranslation, useStore } from "@/hooks/use-store";
 import { useRoute, useSearch } from "wouter";
 import { useState, useCallback, useEffect } from "react";
@@ -22,6 +22,21 @@ export default function CourseDetail() {
   const { data: course, isLoading: courseLoading } = useCourse(slug);
   const { data: videos, isLoading: videosLoading } = useCourseVideos(course?.id);
   const { data: documents } = useCourseDocuments(course?.id);
+  const { data: categories } = useCategories();
+
+  const getCategoryPath = (categoryId: number | undefined) => {
+    if (!categoryId || !categories) return '';
+    const category = categories.find(c => c.id === categoryId);
+    if (!category) return '';
+    
+    const parts: string[] = [];
+    let current: typeof category | undefined = category;
+    while (current) {
+      parts.unshift(getLocalized(current.title as any));
+      current = current.parentId ? categories.find(c => c.id === current!.parentId) : undefined;
+    }
+    return parts.join(' / ');
+  };
 
   const [activeVideoIndex, setActiveVideoIndex] = useState<number>(0);
   const [liveProgress, setLiveProgress] = useState<Record<number, number>>({});
@@ -121,6 +136,9 @@ export default function CourseDetail() {
   const exportToExcel = () => {
     if (!sortedVideos.length || !course) return;
     
+    const courseTitle = getLocalized(course.title as any);
+    const categoryPath = getCategoryPath(course.categoryId);
+    
     const data = sortedVideos.map((v, i) => {
       const completed = course?.id ? isVideoComplete(course.id, v.id) : false;
       const progress = getProgress(v.id);
@@ -129,6 +147,8 @@ export default function CourseDetail() {
       
       return {
         'Sıra': i + 1,
+        'Kategori': categoryPath,
+        'Kurs Adı': courseTitle,
         'Video Başlığı': getLocalized(v.title as any),
         'Toplam Süre': `${Math.floor(v.duration / 60)}:${(v.duration % 60).toString().padStart(2, '0')}`,
         'İzlenen Süre': `${Math.floor(watchedSec / 60)}:${(watchedSec % 60).toString().padStart(2, '0')}`,
@@ -142,6 +162,8 @@ export default function CourseDetail() {
     
     ws['!cols'] = [
       { wch: 6 },
+      { wch: 25 },
+      { wch: 25 },
       { wch: 50 },
       { wch: 12 },
       { wch: 12 },
@@ -151,19 +173,20 @@ export default function CourseDetail() {
     ];
 
     const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, 'Kurs İçeriği');
+    XLSX.utils.book_append_sheet(wb, ws, 'Kurs Icerigi');
     
     const summaryData = [
-      { 'Bilgi': 'Kurs Adı', 'Değer': getLocalized(course.title as any) },
-      { 'Bilgi': 'Toplam Video', 'Değer': sortedVideos.length },
-      { 'Bilgi': 'Toplam Süre', 'Değer': formatTime(totalDurationSeconds) },
-      { 'Bilgi': 'İzlenen Süre', 'Değer': formatTime(watchedDurationSeconds) },
-      { 'Bilgi': 'Kalan Süre', 'Değer': formatTime(remainingDurationSeconds) },
-      { 'Bilgi': 'Tamamlanan Video', 'Değer': sortedVideos.filter(v => isVideoCompleted(v.id)).length }
+      { 'Bilgi': 'Kategori', 'Deger': categoryPath },
+      { 'Bilgi': 'Kurs Adi', 'Deger': courseTitle },
+      { 'Bilgi': 'Toplam Video', 'Deger': sortedVideos.length },
+      { 'Bilgi': 'Toplam Sure', 'Deger': formatTime(totalDurationSeconds) },
+      { 'Bilgi': 'Izlenen Sure', 'Deger': formatTime(watchedDurationSeconds) },
+      { 'Bilgi': 'Kalan Sure', 'Deger': formatTime(remainingDurationSeconds) },
+      { 'Bilgi': 'Tamamlanan Video', 'Deger': sortedVideos.filter(v => isVideoCompleted(v.id)).length }
     ];
     const summaryWs = XLSX.utils.json_to_sheet(summaryData);
     summaryWs['!cols'] = [{ wch: 20 }, { wch: 40 }];
-    XLSX.utils.book_append_sheet(wb, summaryWs, 'Özet');
+    XLSX.utils.book_append_sheet(wb, summaryWs, 'Ozet');
 
     XLSX.writeFile(wb, `${course.slug}-kurs-icerigi.xlsx`);
   };
@@ -171,18 +194,22 @@ export default function CourseDetail() {
   const exportToPDF = () => {
     if (!sortedVideos.length || !course) return;
     
-    const doc = new jsPDF();
+    const doc = new jsPDF('landscape');
     const courseTitle = getLocalized(course.title as any);
+    const categoryPath = getCategoryPath(course.categoryId);
     
-    doc.setFontSize(18);
+    doc.setFontSize(14);
     doc.setFont('helvetica', 'bold');
-    doc.text(courseTitle, 14, 20);
+    doc.text(courseTitle, 14, 15);
     
-    doc.setFontSize(10);
+    doc.setFontSize(9);
     doc.setFont('helvetica', 'normal');
     doc.setTextColor(100);
+    doc.text(`Kategori: ${categoryPath}`, 14, 22);
+    
+    doc.setFontSize(8);
     const summaryText = `Toplam: ${sortedVideos.length} video | Sure: ${formatTime(totalDurationSeconds)} | Izlenen: ${formatTime(watchedDurationSeconds)} | Kalan: ${formatTime(remainingDurationSeconds)}`;
-    doc.text(summaryText, 14, 30);
+    doc.text(summaryText, 14, 28);
     
     const tableData = sortedVideos.map((v, i) => {
       const completed = course?.id ? isVideoComplete(course.id, v.id) : false;
@@ -198,28 +225,31 @@ export default function CourseDetail() {
     });
 
     autoTable(doc, {
-      startY: 38,
-      head: [['#', 'Video Basligi', 'Sure', 'Ilerleme', 'Tamamlandi']],
+      startY: 34,
+      head: [['#', 'Video Basligi', 'Sure', '%', 'Durum']],
       body: tableData,
       styles: {
-        fontSize: 9,
-        cellPadding: 3,
+        fontSize: 7,
+        cellPadding: 2,
+        overflow: 'linebreak',
       },
       headStyles: {
         fillColor: [59, 130, 246],
         textColor: 255,
-        fontStyle: 'bold'
+        fontStyle: 'bold',
+        fontSize: 7
       },
       alternateRowStyles: {
         fillColor: [245, 247, 250]
       },
       columnStyles: {
-        0: { cellWidth: 10, halign: 'center' },
-        1: { cellWidth: 90 },
-        2: { cellWidth: 20, halign: 'center' },
-        3: { cellWidth: 20, halign: 'center' },
-        4: { cellWidth: 25, halign: 'center' }
-      }
+        0: { cellWidth: 12, halign: 'center' },
+        1: { cellWidth: 200 },
+        2: { cellWidth: 18, halign: 'center' },
+        3: { cellWidth: 15, halign: 'center' },
+        4: { cellWidth: 18, halign: 'center' }
+      },
+      margin: { left: 14, right: 14 }
     });
 
     doc.save(`${course.slug}-kurs-icerigi.pdf`);
