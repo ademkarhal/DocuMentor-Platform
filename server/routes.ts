@@ -8,6 +8,38 @@ export async function registerRoutes(
   app: Express
 ): Promise<Server> {
   
+  // Auth endpoint for course login
+  app.post('/api/auth/login', async (req, res) => {
+    const { username, password, authUrl } = req.body;
+    
+    // If authUrl provided, forward to external service
+    if (authUrl) {
+      try {
+        const response = await fetch(authUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username, password })
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          return res.json({ success: true, data });
+        } else {
+          return res.status(401).json({ success: false, message: 'Authentication failed' });
+        }
+      } catch (error) {
+        return res.status(500).json({ success: false, message: 'Auth service unavailable' });
+      }
+    }
+    
+    // Default admin/admin login
+    if (username === 'admin' && password === 'admin') {
+      return res.json({ success: true });
+    }
+    
+    return res.status(401).json({ success: false, message: 'Invalid credentials' });
+  });
+
   app.get(api.categories.list.path, async (req, res) => {
     const categories = await storage.getCategories();
     res.json(categories);

@@ -5,13 +5,14 @@
 A public-access, single-page application (SPA) for training and documentation, built for customers using the organization's software. The platform provides a Udemy-style course structure with video content hosted on YouTube and embedded via players. It supports bilingual content (English/Turkish), dark/light themes, and tracks video progress locally.
 
 **Key Features:**
-- Public access (no authentication)
+- Public access with optional course-level password protection
 - Course categories with video lessons
 - YouTube video embedding
 - Bilingual support (EN/TR)
 - Dark/light theme toggle
 - Local video progress tracking
 - Mobile-responsive design
+- Course-level authentication with external auth URL support
 
 ## User Preferences
 
@@ -69,6 +70,27 @@ All endpoints are prefixed with `/api`:
 - `GET /api/courses/:id/videos` - Get videos for a course
 - `GET /api/courses/:id/documents` - Get documents for a course
 - `GET /api/search?q=` - Search content
+- `POST /api/auth/login` - Course authentication (supports external auth URL)
+
+### Course Protection System
+Courses can be protected with password authentication configured in `config/playlists.json`:
+
+```json
+{
+  "playlists": [
+    {
+      "url": "https://youtube.com/playlist?list=...",
+      "slug": "my-course",
+      "protected": true,
+      "authUrl": ""  // Empty = use default admin/admin, or external URL
+    }
+  ]
+}
+```
+
+- **protected**: `true` = requires login, `false` = public access
+- **authUrl**: Empty string = default credentials (admin/admin), or external URL for custom authentication
+- External auth URL receives POST with `{ username, password }` and should return 200 OK on success
 
 ### Internationalization
 Content stored as JSONB with structure `{ en: string, tr: string }`. The `useTranslation` hook from `use-store.ts` handles language switching and content localization.

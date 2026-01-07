@@ -5,32 +5,28 @@
       "slug": "takip-724",
       "title": { "tr": "Takip 7/24", "en": "Takip 7/24" },
       "icon": "monitor",
-      "parentId": null,
-      "protected": false
+      "parentId": null
     },
     {
       "id": 2,
       "slug": "musteri-paneli",
       "title": { "tr": "Müşteri Paneli", "en": "Customer Panel" },
       "icon": "users",
-      "parentId": 1,
-      "protected": false
+      "parentId": 1
     },
     {
       "id": 3,
       "slug": "genel-yonetim-paneli",
       "title": { "tr": "Genel Yönetim Paneli", "en": "General Management Panel" },
       "icon": "settings",
-      "parentId": 1,
-      "protected": true
+      "parentId": 1
     },
     {
       "id": 4,
       "slug": "mobil-uygulama",
       "title": { "tr": "Mobil Uygulama", "en": "Mobile Application" },
       "icon": "smartphone",
-      "parentId": 1,
-      "protected": false
+      "parentId": 1
     }
   ],
   "playlists": [
@@ -40,7 +36,9 @@
       "slug": "csharp-course",
       "defaultTitle": { "tr": "C# Programlama", "en": "C# Programming" },
       "defaultDescription": { "tr": "C# programlama dili ile yazılım geliştirme", "en": "Software development with C# programming language" },
-      "thumbnail": ""
+      "thumbnail": "",
+      "protected": false,
+      "authUrl": ""
     },
     {
       "url": "https://www.youtube.com/playlist?list=PLQVXoXFVVtp1DFmoTL4cPTWEWiqndKexZ",
@@ -48,7 +46,9 @@
       "slug": "aspnet-core-course",
       "defaultTitle": { "tr": "ASP.NET Core", "en": "ASP.NET Core" },
       "defaultDescription": { "tr": "ASP.NET Core ile web geliştirme", "en": "Web development with ASP.NET Core" },
-      "thumbnail": ""
+      "thumbnail": "",
+      "protected": false,
+      "authUrl": ""
     },
     {
       "url": "https://www.youtube.com/playlist?list=PLURN6mxdcwL-xIXzq92ZJN9yRW7Q0mjzw",
@@ -56,7 +56,9 @@
       "slug": "react-course",
       "defaultTitle": { "tr": "React", "en": "React" },
       "defaultDescription": { "tr": "React ile modern web uygulamaları", "en": "Modern web applications with React" },
-      "thumbnail": ""
+      "thumbnail": "",
+      "protected": true,
+      "authUrl": ""
     },
     {
       "url": "https://www.youtube.com/playlist?list=PLaZoPjR0BnOG9z5aJ4zudiL3TmfaBZ2Qm",
@@ -64,7 +66,9 @@
       "slug": "nextjs-course",
       "defaultTitle": { "tr": "NextJS 15", "en": "NextJS 15" },
       "defaultDescription": { "tr": "NextJS 15 ile fullstack geliştirme", "en": "Fullstack development with NextJS 15" },
-      "thumbnail": ""
+      "thumbnail": "",
+      "protected": false,
+      "authUrl": ""
     }
   ]
 }

@@ -30,16 +30,19 @@ export default function CourseDetail() {
   const [loginDialogOpen, setLoginDialogOpen] = useState(false);
   const [loginSuccess, setLoginSuccess] = useState(false);
   
-  // Check if course category is protected
-  const courseCategory = course?.categoryId ? categories?.find(c => c.id === course.categoryId) : null;
-  const isProtected = (courseCategory as any)?.protected && !isAuthenticated;
+  // Check if course itself is protected (from JSON config)
+  const isProtected = (course as any)?.protected && !isAuthenticated;
+  const courseAuthUrl = (course as any)?.authUrl || '';
   
   // Show login dialog if protected and not authenticated
   useEffect(() => {
-    if (course && categories && isProtected && !loginSuccess) {
+    if (course && isProtected && !loginSuccess) {
       setLoginDialogOpen(true);
     }
-  }, [course, categories, isProtected, loginSuccess]);
+  }, [course, isProtected, loginSuccess]);
+  
+  // Get category for breadcrumb
+  const courseCategory = course?.categoryId ? categories?.find(c => c.id === course.categoryId) : null;
 
   const getCategoryPath = (categoryId: number | undefined) => {
     if (!categoryId || !categories) return '';
@@ -374,6 +377,7 @@ export default function CourseDetail() {
             setLoginSuccess(true);
             setLoginDialogOpen(false);
           }}
+          authUrl={courseAuthUrl}
         />
         <Button onClick={() => setLoginDialogOpen(true)} data-testid="button-show-login">
           {t.login}
@@ -738,6 +742,7 @@ export default function CourseDetail() {
             navigate('/courses');
           }
         }}
+        authUrl={courseAuthUrl}
       />
     </div>
   );

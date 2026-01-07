@@ -24,6 +24,8 @@ export interface Course {
   thumbnail: string;
   totalVideos: number;
   nextcloudShareUrl: string;
+  protected?: boolean;
+  authUrl?: string;
 }
 
 export interface Video {
@@ -51,6 +53,8 @@ interface PlaylistConfig {
   defaultTitle: BilingualText;
   defaultDescription: BilingualText;
   thumbnail?: string;
+  protected?: boolean;
+  authUrl?: string;
 }
 
 interface ConfigData {
@@ -165,7 +169,9 @@ class MemoryStorage {
         const course: Course = {
           ...cachedPlaylist.course,
           id: courseIdCounter,
-          categoryId: playlist.categoryId
+          categoryId: playlist.categoryId,
+          protected: playlist.protected || false,
+          authUrl: playlist.authUrl || ''
         };
         this.courses.push(course);
         
@@ -205,7 +211,9 @@ class MemoryStorage {
             },
             thumbnail: thumbnailUrl,
             totalVideos: playlistVideos.length,
-            nextcloudShareUrl: ""
+            nextcloudShareUrl: "",
+            protected: playlist.protected || false,
+            authUrl: playlist.authUrl || ''
           };
           
           this.courses.push(course);

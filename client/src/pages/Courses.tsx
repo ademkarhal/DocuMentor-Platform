@@ -99,8 +99,8 @@ export default function Courses({ categorySlug }: CoursesProps) {
               ? `${getLocalized(parentCategory.title as { en: string; tr: string })} / ${getLocalized(courseCategory?.title as { en: string; tr: string })}`
               : getLocalized(courseCategory?.title as { en: string; tr: string });
             
-            // Check if course category is protected
-            const isProtected = (courseCategory as any)?.protected && !isAuthenticated;
+            // Check if course is protected (from course itself, not category)
+            const isProtected = (course as any)?.protected && !isAuthenticated;
             
             const handleCourseClick = (e: React.MouseEvent) => {
               if (isProtected) {
@@ -226,6 +226,7 @@ export default function Courses({ categorySlug }: CoursesProps) {
             setPendingCourseSlug(null);
           }
         }}
+        authUrl={pendingCourseSlug ? (courses?.find(c => c.slug === pendingCourseSlug) as any)?.authUrl : undefined}
       />
     </div>
   );

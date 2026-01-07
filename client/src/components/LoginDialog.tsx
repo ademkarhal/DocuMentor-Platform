@@ -4,40 +4,58 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useStore, useTranslation } from "@/hooks/use-store";
-import { Lock } from "lucide-react";
+import { Lock, Loader2 } from "lucide-react";
 
 interface LoginDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSuccess?: () => void;
+  authUrl?: string;
 }
 
-export function LoginDialog({ open, onOpenChange, onSuccess }: LoginDialogProps) {
+export function LoginDialog({ open, onOpenChange, onSuccess, authUrl }: LoginDialogProps) {
   const { t } = useTranslation();
   const { login } = useStore();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState(false);
+  const [loading, setLoading] = useState(false);
   
   useEffect(() => {
     if (open) {
       setUsername("");
       setPassword("");
       setError(false);
+      setLoading(false);
     }
   }, [open]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const success = login(username, password);
-    if (success) {
-      setUsername("");
-      setPassword("");
-      setError(false);
-      onOpenChange(false);
-      onSuccess?.();
-    } else {
+    setLoading(true);
+    setError(false);
+    
+    try {
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password, authUrl: authUrl || '' })
+      });
+      
+      if (response.ok) {
+        login(username, password);
+        setUsername("");
+        setPassword("");
+        setError(false);
+        onOpenChange(false);
+        onSuccess?.();
+      } else {
+        setError(true);
+      }
+    } catch {
       setError(true);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -79,8 +97,8 @@ export function LoginDialog({ open, onOpenChange, onSuccess }: LoginDialogProps)
               {t.loginError}
             </p>
           )}
-          <Button type="submit" className="w-full" data-testid="button-login-submit">
-            {t.login}
+          <Button type="submit" className="w-full" disabled={loading} data-testid="button-login-submit">
+            {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : t.login}
           </Button>
         </form>
       </DialogContent>
