@@ -28,6 +28,7 @@ export default function CourseDetail() {
   const { data: categories } = useCategories();
   
   const [loginDialogOpen, setLoginDialogOpen] = useState(false);
+  const [loginSuccess, setLoginSuccess] = useState(false);
   
   // Check if course category is protected
   const courseCategory = course?.categoryId ? categories?.find(c => c.id === course.categoryId) : null;
@@ -35,10 +36,10 @@ export default function CourseDetail() {
   
   // Show login dialog if protected and not authenticated
   useEffect(() => {
-    if (course && categories && isProtected) {
+    if (course && categories && isProtected && !loginSuccess) {
       setLoginDialogOpen(true);
     }
-  }, [course, categories, isProtected]);
+  }, [course, categories, isProtected, loginSuccess]);
 
   const getCategoryPath = (categoryId: number | undefined) => {
     if (!categoryId || !categories) return '';
@@ -355,7 +356,7 @@ export default function CourseDetail() {
   if (!course) return <div className="p-12 text-center text-muted-foreground">Kurs bulunamadi</div>;
 
   // If protected and not authenticated, show login dialog overlay
-  if (isProtected) {
+  if (isProtected && !loginSuccess) {
     return (
       <div className="max-w-7xl mx-auto p-12 text-center">
         <div className="text-muted-foreground mb-4">
@@ -365,9 +366,13 @@ export default function CourseDetail() {
           open={loginDialogOpen} 
           onOpenChange={(open) => {
             setLoginDialogOpen(open);
-            if (!open) {
+            if (!open && !loginSuccess) {
               navigate('/courses');
             }
+          }}
+          onSuccess={() => {
+            setLoginSuccess(true);
+            setLoginDialogOpen(false);
           }}
         />
         <Button onClick={() => setLoginDialogOpen(true)} data-testid="button-show-login">
