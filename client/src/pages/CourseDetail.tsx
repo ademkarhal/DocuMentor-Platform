@@ -10,6 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import XLSX from "xlsx-js-style";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
+import { robotoBase64 } from "@/assets/roboto-font";
 
 export default function CourseDetail() {
   const [, params] = useRoute("/courses/:slug");
@@ -217,20 +218,23 @@ export default function CourseDetail() {
     if (!sortedVideos.length || !course) return;
     
     const doc = new jsPDF('landscape');
+    
+    doc.addFileToVFS('Roboto-Regular.ttf', robotoBase64);
+    doc.addFont('Roboto-Regular.ttf', 'Roboto', 'normal');
+    doc.setFont('Roboto');
+    
     const courseTitle = getLocalized(course.title as any);
     const categoryPath = getCategoryPath(course.categoryId);
     
     doc.setFontSize(14);
-    doc.setFont('helvetica', 'bold');
     doc.text(courseTitle, 14, 15);
     
     doc.setFontSize(9);
-    doc.setFont('helvetica', 'normal');
     doc.setTextColor(100);
     doc.text(`Kategori: ${categoryPath}`, 14, 22);
     
     doc.setFontSize(8);
-    const summaryText = `Toplam: ${sortedVideos.length} video | Sure: ${formatTime(totalDurationSeconds)} | Izlenen: ${formatTime(watchedDurationSeconds)} | Kalan: ${formatTime(remainingDurationSeconds)}`;
+    const summaryText = `Toplam: ${sortedVideos.length} video | Süre: ${formatTime(totalDurationSeconds)} | İzlenen: ${formatTime(watchedDurationSeconds)} | Kalan: ${formatTime(remainingDurationSeconds)}`;
     doc.text(summaryText, 14, 28);
     
     const tableData = sortedVideos.map((v, i) => {
@@ -242,18 +246,19 @@ export default function CourseDetail() {
         getLocalized(v.title as any),
         duration,
         `%${progress}`,
-        completed ? 'Evet' : 'Hayir'
+        completed ? 'Evet' : 'Hayır'
       ];
     });
 
     autoTable(doc, {
       startY: 34,
-      head: [['#', 'Video Basligi', 'Sure', '%', 'Durum']],
+      head: [['#', 'Video Başlığı', 'Süre', '%', 'Durum']],
       body: tableData,
       styles: {
         fontSize: 7,
         cellPadding: 2,
         overflow: 'linebreak',
+        font: 'Roboto'
       },
       headStyles: {
         fillColor: [59, 130, 246],
