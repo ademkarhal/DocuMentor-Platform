@@ -128,6 +128,14 @@ export const useStore = create<AppState>()(
     }),
     {
       name: 'training-platform-storage',
+      partialize: (state) => ({
+        language: state.language,
+        theme: state.theme,
+        sidebarOpen: state.sidebarOpen,
+        videoProgress: state.videoProgress,
+        completedVideos: state.completedVideos,
+        watchedVideos: state.watchedVideos,
+      }),
     }
   )
 );

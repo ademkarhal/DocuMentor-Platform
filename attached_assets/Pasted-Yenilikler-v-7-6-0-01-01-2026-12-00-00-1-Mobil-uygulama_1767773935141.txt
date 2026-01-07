@@ -1,0 +1,33 @@
+Yenilikler v 7.6.0 / 01.01.2026 12:00:00
+1). Mobil uygulamalarda araç listesi ve haritaya gps yok durum ikonu eklendi.
+2). Tüm araç adı düzenleme alanlarının firma ve kullanıcı bazlı devre dışı bırakma özelliği eklendi. (Transay)
+3). Modüller / Bölge Kontrollü Araç Talep Modülü / Araçlara Bölge Atama sayfasında, her araca atalı olan bölge adını gösterme özelliği eklendi.
+4). Yönetici İşlemleri / Kullanıcı İşlemleri / Kullanıcı Listesindeki Grup atama listelerinde geliştirmeler yapıldı. Atanmayan gruplar artık gösteriliyor ancak kullanıcı herhangi bir işlem yapamıyor.
+5). Yönetici İşlemleri / Kullanıcı İşlemleri / Kullanıcı Listesindeki Grup atama listelerinde atalı olmayan gruplar üzerine kırmızı ve yeşil açıklamalı durum simgeleri eklendi.
+6). Analiz &amp; Raporlar / Genel Raporlar / Hız Raporuna, araç grup eklenmiştir.
+7). Analiz &amp; Raporlar / Genel Raporlar / Araç Detay Raporuna, araç grup eklenmiştir.
+8). Sistem genelinde yapılan tüm atama / çıkartma işlemlerine onay mekanizması eklendi.
+9). Genel Yönetim Paneli / Analiz & Raporlar / Cihaz Bağlantı Durum raporuna cihaz modeli bilgisi eklendi.
+10). Genel Yönetim Panelinde tüm araç ekleme ve düzenleme sayfalarındaki sensör ve entegrasyonlar bölümüne utts seçeneği eklendi.
+11). Haritalı sayfadalardaki nokta listelerinde bulunan toplu seçme işlemleri sayfasına nokta kodu ile seçme özelliği eklendi.
+12). Yönetim / Coğrafi İşlemler / Dosyadan Yükleme İşlemleri sayfasına nokta, bölge, rota aktarılsın / aktarılmasın seçeneği eklendi.
+13). Yönetim / Coğrafi İşlemler / Dosyadan Yükleme İşlemleri sayfasına yüklenen dosyaları excel gibi düzenleme özelliği eklendi.
+14). Sistem genelinde tüm datagridler için sütunları gizle/göster seçeneği eklenmiştir.
+15). Sistem genelinde tüm datagridler için sütun boyutu ayarlama özelliği daha kolay tutulabilir biçimde geliştirilmiştir.
+16). Mobil ve Web uygulamasındaki harita katmanlarına wms yangın haritası katmanı eklendi.
+17). Mobil uygulamalardaki tüm tarih seçmeli raporlara hızlı tarih seçim kutucuğu eklendi.
+18). Quecklink native kamera entegrasyonları yapıldı.
+19). Bing haritaları yeni versiyon olan azure maps entegrasyonu yapılarak güncellendi.
+20). Sistem genelinde tüm html sayfalar template yapısına göre düzenlendi.
+21). Dynatree tree entegrasyonları üzerine geliştirmeler yapıldı. (Hızlandırma, Sayım vb.)
+22). Track724 tree entegrasyonları üzerine geliştirmeler yapıldı. (Hızlandırma, Grup Rengi Gösterme, Sayım vb.)
+23). Raporlar / Sistem Raporları kategorisine Mail, Sms, Bildirim Durum Raporuna silinmiş kullanıcıları gösterme özelliği eklendi.
+24). Yönetici İşlemleri / Araç İşlemleri / Araç Grup Listesi sayfasına Track724 tree desteği sağlandı.
+25). Yönetici İşlemleri / Coğrafi İşlemler / Nokta, Bölge, Güzergah Grup Listesi ve Güzergah Nokta Atama sayfalarına Track724 tree desteği sağlandı.
+26). Yönetici İşlemleri / Araç Ayarları / Mesai Tanımlamaları, Nokta, Bölge, Güzergah Atama satfalarına Track724 tree desteği sağlandı.
+27). Haritalı sayfa araç düzenleme sayfasındaki grup listesi için Track724 tree desteği sağlandı.
+28). Haritalı sayfa nokta, bölge, güzergah ekleme ve düzenleme sayfasındaki listeler için Track724 tree desteği sağlandı.
+29). Haritalı sayfa nokta ekleme ve düzenleme sayfasındaki atalı güzergah listesi için Track724 tree desteği sağlandı.
+30). Genel Yönetim Paneli üzerindeki tüm listeler için Track724 tree desteği sağlandı.
+31). Java bağımlılıklarından bitwalker user agent kütüphanesi iptal edilip yerine yauaa kütüphanesi entegrasyonu yapıldı.
+32). Küçük düzeltmeler ve geliştirmeler yapıldı.
