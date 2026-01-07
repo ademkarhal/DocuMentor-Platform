@@ -55,10 +55,10 @@ export function Sidebar({ className }: { className?: string }) {
           />
         </div>
         <nav className="flex-1 flex flex-col items-center gap-2 p-2 mt-4">
-          <Link href="/" className={cn("p-2 rounded-lg", isActive("/") ? "bg-primary/10" : "hover:bg-muted/50")}>
+          <Link href="/" className={cn("p-2 rounded-lg", isActive("/") ? "bg-primary/10" : "hover:bg-muted/50")} data-testid="link-home-collapsed">
             <Home className={cn("w-5 h-5", isActive("/") ? "text-primary" : "text-muted-foreground")} />
           </Link>
-          <Link href="/courses" className={cn("p-2 rounded-lg", isActive("/courses") ? "bg-primary/10" : "hover:bg-muted/50")}>
+          <Link href="/courses" className={cn("p-2 rounded-lg", isActive("/courses") ? "bg-primary/10" : "hover:bg-muted/50")} data-testid="link-courses-collapsed">
             <Compass className={cn("w-5 h-5", isActive("/courses") ? "text-primary" : "text-muted-foreground")} />
           </Link>
         </nav>

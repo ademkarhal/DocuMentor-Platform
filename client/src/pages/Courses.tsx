@@ -214,7 +214,12 @@ export default function Courses({ categorySlug }: CoursesProps) {
       
       <LoginDialog 
         open={loginDialogOpen} 
-        onOpenChange={setLoginDialogOpen}
+        onOpenChange={(open) => {
+          setLoginDialogOpen(open);
+          if (!open) {
+            setPendingCourseSlug(null);
+          }
+        }}
         onSuccess={() => {
           if (pendingCourseSlug) {
             navigate(`/courses/${pendingCourseSlug}`);
