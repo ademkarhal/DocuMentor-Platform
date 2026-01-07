@@ -5,6 +5,7 @@ import { useTranslation, useStore } from "@/hooks/use-store";
 import { useCategories } from "@/hooks/use-api";
 import logoImage from "@assets/generated_images/technotrade_academy_corporate_logo.png";
 import { Button } from "@/components/ui/button";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 const iconMap: Record<string, any> = {
   monitor: Monitor,
@@ -116,23 +117,30 @@ export function Sidebar({ className }: { className?: string }) {
                       const ChildIcon = iconMap[childCat.icon] || Code;
                       const active = isActive(`/categories/${childCat.slug}`);
                       const isProtected = (childCat as any).protected && !isAuthenticated;
+                      const categoryTitle = getLocalized(childCat.title as { en: string; tr: string });
                       
                       return (
-                        <Link 
-                          key={childCat.id}
-                          href={`/categories/${childCat.slug}`} 
-                          className={cn(
-                            "flex items-center gap-3 px-3 py-2 rounded-lg transition-all duration-200 text-sm",
-                            active
-                              ? "bg-primary/10 text-primary shadow-sm font-medium" 
-                              : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
-                          )}
-                        >
-                          <ChildIcon className={cn("w-4 h-4", active ? "text-primary" : "text-muted-foreground")} />
-                          <span className="flex-1">{getLocalized(childCat.title as { en: string; tr: string })}</span>
-                          {isProtected && <Lock className="w-3.5 h-3.5 text-amber-500" />}
-                          {active && <ChevronRight className="w-4 h-4 text-primary" />}
-                        </Link>
+                        <Tooltip key={childCat.id}>
+                          <TooltipTrigger asChild>
+                            <Link 
+                              href={`/categories/${childCat.slug}`} 
+                              className={cn(
+                                "flex items-center gap-3 px-3 py-2 rounded-lg transition-all duration-200 text-sm",
+                                active
+                                  ? "bg-primary/10 text-primary shadow-sm font-medium" 
+                                  : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
+                              )}
+                            >
+                              <ChildIcon className={cn("w-4 h-4 shrink-0", active ? "text-primary" : "text-muted-foreground")} />
+                              <span className="flex-1 truncate">{categoryTitle}</span>
+                              {isProtected && <Lock className="w-3.5 h-3.5 shrink-0 text-amber-500" />}
+                              {active && <ChevronRight className="w-4 h-4 shrink-0 text-primary" />}
+                            </Link>
+                          </TooltipTrigger>
+                          <TooltipContent side="right">
+                            {categoryTitle}
+                          </TooltipContent>
+                        </Tooltip>
                       );
                     })}
                   </div>

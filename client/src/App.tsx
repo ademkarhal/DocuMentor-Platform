@@ -46,7 +46,7 @@ function App() {
         <div className="flex h-screen w-full bg-background overflow-hidden">
           <Sidebar className={cn(
             "hidden lg:flex shrink-0 transition-all duration-300",
-            sidebarOpen ? "w-64" : "w-16"
+            sidebarOpen ? "w-72" : "w-16"
           )} />
           
           <div className="flex-1 flex flex-col h-full overflow-hidden relative">
