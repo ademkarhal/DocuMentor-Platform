@@ -7,6 +7,9 @@ import { cn } from "@/lib/utils";
 import VideoPlayer from "@/components/VideoPlayer";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import * as XLSX from "xlsx";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 
 export default function CourseDetail() {
   const [, params] = useRoute("/courses/:slug");
@@ -115,69 +118,111 @@ export default function CourseDetail() {
     return h > 0 ? `${h}h ${m}m` : `${m}m`;
   };
 
-  const exportToCSV = () => {
+  const exportToExcel = () => {
     if (!sortedVideos.length || !course) return;
     
-    const headers = ['Sıra', 'Video Başlığı', 'Süre', 'İzleme Durumu', 'Tamamlandı'];
-    const rows = sortedVideos.map((v, i) => {
+    const data = sortedVideos.map((v, i) => {
       const completed = course?.id ? isVideoComplete(course.id, v.id) : false;
       const progress = getProgress(v.id);
-      return [
-        i + 1,
-        `"${getLocalized(v.title as any)}"`,
-        `${Math.floor(v.duration / 60)}:${(v.duration % 60).toString().padStart(2, '0')}`,
-        `${progress}%`,
-        completed ? 'Evet' : 'Hayır'
-      ].join(',');
+      const watchedSec = Math.floor(videoProgress[`${course?.id}-${v.id}`] || 0);
+      const remainingSec = Math.max(0, v.duration - watchedSec);
+      
+      return {
+        'Sıra': i + 1,
+        'Video Başlığı': getLocalized(v.title as any),
+        'Toplam Süre': `${Math.floor(v.duration / 60)}:${(v.duration % 60).toString().padStart(2, '0')}`,
+        'İzlenen Süre': `${Math.floor(watchedSec / 60)}:${(watchedSec % 60).toString().padStart(2, '0')}`,
+        'Kalan Süre': `${Math.floor(remainingSec / 60)}:${(remainingSec % 60).toString().padStart(2, '0')}`,
+        'İlerleme %': progress,
+        'Tamamlandı': completed ? 'Evet' : 'Hayır'
+      };
     });
+
+    const ws = XLSX.utils.json_to_sheet(data);
     
-    const csv = [headers.join(','), ...rows].join('\n');
-    const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${course.slug}-kurs-icerigi.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
+    ws['!cols'] = [
+      { wch: 6 },
+      { wch: 50 },
+      { wch: 12 },
+      { wch: 12 },
+      { wch: 12 },
+      { wch: 10 },
+      { wch: 12 }
+    ];
+
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Kurs İçeriği');
+    
+    const summaryData = [
+      { 'Bilgi': 'Kurs Adı', 'Değer': getLocalized(course.title as any) },
+      { 'Bilgi': 'Toplam Video', 'Değer': sortedVideos.length },
+      { 'Bilgi': 'Toplam Süre', 'Değer': formatTime(totalDurationSeconds) },
+      { 'Bilgi': 'İzlenen Süre', 'Değer': formatTime(watchedDurationSeconds) },
+      { 'Bilgi': 'Kalan Süre', 'Değer': formatTime(remainingDurationSeconds) },
+      { 'Bilgi': 'Tamamlanan Video', 'Değer': sortedVideos.filter(v => isVideoCompleted(v.id)).length }
+    ];
+    const summaryWs = XLSX.utils.json_to_sheet(summaryData);
+    summaryWs['!cols'] = [{ wch: 20 }, { wch: 40 }];
+    XLSX.utils.book_append_sheet(wb, summaryWs, 'Özet');
+
+    XLSX.writeFile(wb, `${course.slug}-kurs-icerigi.xlsx`);
   };
 
   const exportToPDF = () => {
     if (!sortedVideos.length || !course) return;
     
-    const printWindow = window.open('', '_blank');
-    if (printWindow) {
-      printWindow.document.write(`
-        <html>
-          <head>
-            <title>${getLocalized(course.title as any)}</title>
-            <style>
-              body { font-family: Arial, sans-serif; padding: 40px; line-height: 1.6; }
-              h1 { color: #1a365d; border-bottom: 2px solid #1a365d; padding-bottom: 10px; }
-              .info { background: #f0f4f8; padding: 15px; border-radius: 8px; margin-bottom: 20px; }
-              .video { padding: 8px 0; border-bottom: 1px solid #e2e8f0; }
-              .completed { color: #38a169; }
-            </style>
-          </head>
-          <body>
-            <h1>${getLocalized(course.title as any)}</h1>
-            <div class="info">
-              <strong>Toplam:</strong> ${sortedVideos.length} video | 
-              <strong>Süre:</strong> ${formatTime(totalDurationSeconds)} | 
-              <strong>İzlenen:</strong> ${formatTime(watchedDurationSeconds)} | 
-              <strong>Kalan:</strong> ${formatTime(remainingDurationSeconds)}
-            </div>
-            ${sortedVideos.map((v, i) => {
-              const completed = course?.id ? isVideoComplete(course.id, v.id) : false;
-              const progress = getProgress(v.id);
-              const duration = `${Math.floor(v.duration / 60)}:${(v.duration % 60).toString().padStart(2, '0')}`;
-              return `<div class="video ${completed ? 'completed' : ''}">${i + 1}. ${getLocalized(v.title as any)} - ${duration} - %${progress} ${completed ? '<strong>(Tamamlandı)</strong>' : ''}</div>`;
-            }).join('')}
-          </body>
-        </html>
-      `);
-      printWindow.document.close();
-      printWindow.print();
-    }
+    const doc = new jsPDF();
+    const courseTitle = getLocalized(course.title as any);
+    
+    doc.setFontSize(18);
+    doc.setFont('helvetica', 'bold');
+    doc.text(courseTitle, 14, 20);
+    
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(100);
+    const summaryText = `Toplam: ${sortedVideos.length} video | Sure: ${formatTime(totalDurationSeconds)} | Izlenen: ${formatTime(watchedDurationSeconds)} | Kalan: ${formatTime(remainingDurationSeconds)}`;
+    doc.text(summaryText, 14, 30);
+    
+    const tableData = sortedVideos.map((v, i) => {
+      const completed = course?.id ? isVideoComplete(course.id, v.id) : false;
+      const progress = getProgress(v.id);
+      const duration = `${Math.floor(v.duration / 60)}:${(v.duration % 60).toString().padStart(2, '0')}`;
+      return [
+        (i + 1).toString(),
+        getLocalized(v.title as any),
+        duration,
+        `%${progress}`,
+        completed ? 'Evet' : 'Hayir'
+      ];
+    });
+
+    autoTable(doc, {
+      startY: 38,
+      head: [['#', 'Video Basligi', 'Sure', 'Ilerleme', 'Tamamlandi']],
+      body: tableData,
+      styles: {
+        fontSize: 9,
+        cellPadding: 3,
+      },
+      headStyles: {
+        fillColor: [59, 130, 246],
+        textColor: 255,
+        fontStyle: 'bold'
+      },
+      alternateRowStyles: {
+        fillColor: [245, 247, 250]
+      },
+      columnStyles: {
+        0: { cellWidth: 10, halign: 'center' },
+        1: { cellWidth: 90 },
+        2: { cellWidth: 20, halign: 'center' },
+        3: { cellWidth: 20, halign: 'center' },
+        4: { cellWidth: 25, halign: 'center' }
+      }
+    });
+
+    doc.save(`${course.slug}-kurs-icerigi.pdf`);
   };
 
   // Sample FAQ data
@@ -448,11 +493,25 @@ export default function CourseDetail() {
           <div className="flex items-center justify-between gap-2 mb-2">
             <h2 className="font-bold text-lg">{t.courseContent}</h2>
             <div className="flex gap-1">
-              <Button size="icon" variant="ghost" onClick={exportToCSV} title="Excel/CSV" data-testid="button-export-csv">
+              <Button 
+                size="sm" 
+                variant="outline" 
+                onClick={exportToExcel} 
+                className="gap-1.5 text-green-600 border-green-200 hover:bg-green-50 dark:text-green-400 dark:border-green-800 dark:hover:bg-green-900/30"
+                data-testid="button-export-excel"
+              >
                 <FileSpreadsheet className="w-4 h-4" />
+                <span className="hidden sm:inline">Excel</span>
               </Button>
-              <Button size="icon" variant="ghost" onClick={exportToPDF} title="PDF" data-testid="button-export-pdf">
+              <Button 
+                size="sm" 
+                variant="outline" 
+                onClick={exportToPDF} 
+                className="gap-1.5 text-red-600 border-red-200 hover:bg-red-50 dark:text-red-400 dark:border-red-800 dark:hover:bg-red-900/30"
+                data-testid="button-export-pdf"
+              >
                 <FileDown className="w-4 h-4" />
+                <span className="hidden sm:inline">PDF</span>
               </Button>
             </div>
           </div>
@@ -488,12 +547,12 @@ export default function CourseDetail() {
             const progress = getProgress(video.id);
             
             // Calculate watched and remaining time for this video
-            const videoWatchedSeconds = videoProgress[`${course?.id}-${video.id}`] || 0;
-            const videoRemainingSeconds = Math.max(0, video.duration - videoWatchedSeconds);
+            const videoWatchedSeconds = Math.floor(videoProgress[`${course?.id}-${video.id}`] || 0);
+            const videoRemainingSeconds = Math.floor(Math.max(0, video.duration - videoWatchedSeconds));
             
             const formatVideoTime = (sec: number) => {
               const m = Math.floor(sec / 60);
-              const s = sec % 60;
+              const s = Math.floor(sec % 60);
               return `${m}:${s.toString().padStart(2, '0')}`;
             };
 
