@@ -5,28 +5,32 @@
       "slug": "takip-724",
       "title": { "tr": "Takip 7/24", "en": "Takip 7/24" },
       "icon": "monitor",
-      "parentId": null
+      "parentId": null,
+      "protected": false
     },
     {
       "id": 2,
       "slug": "musteri-paneli",
       "title": { "tr": "Müşteri Paneli", "en": "Customer Panel" },
       "icon": "users",
-      "parentId": 1
+      "parentId": 1,
+      "protected": false
     },
     {
       "id": 3,
       "slug": "genel-yonetim-paneli",
       "title": { "tr": "Genel Yönetim Paneli", "en": "General Management Panel" },
       "icon": "settings",
-      "parentId": 1
+      "parentId": 1,
+      "protected": true
     },
     {
       "id": 4,
       "slug": "mobil-uygulama",
       "title": { "tr": "Mobil Uygulama", "en": "Mobile Application" },
       "icon": "smartphone",
-      "parentId": 1
+      "parentId": 1,
+      "protected": false
     }
   ],
   "playlists": [

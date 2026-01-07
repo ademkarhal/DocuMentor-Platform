@@ -9,6 +9,12 @@ interface AppState {
   setLanguage: (lang: Language) => void;
   theme: Theme;
   toggleTheme: () => void;
+  isAuthenticated: boolean;
+  login: (username: string, password: string) => boolean;
+  logout: () => void;
+  sidebarOpen: boolean;
+  setSidebarOpen: (open: boolean) => void;
+  toggleSidebar: () => void;
   completedVideos: Record<string, boolean>; // key: courseId-videoId
   videoProgress: Record<string, number>; // key: courseId-videoId, value: currentTime in seconds
   watchedVideos: Record<string, boolean>; // videos that have been started watching
@@ -52,6 +58,18 @@ export const useStore = create<AppState>()(
           document.documentElement.classList.remove('dark');
         }
       },
+      isAuthenticated: false,
+      login: (username: string, password: string) => {
+        if (username === 'admin' && password === 'admin') {
+          set({ isAuthenticated: true });
+          return true;
+        }
+        return false;
+      },
+      logout: () => set({ isAuthenticated: false }),
+      sidebarOpen: true,
+      setSidebarOpen: (open) => set({ sidebarOpen: open }),
+      toggleSidebar: () => set((state) => ({ sidebarOpen: !state.sidebarOpen })),
       completedVideos: {},
       videoProgress: {},
       watchedVideos: {},
@@ -144,6 +162,14 @@ const translations = {
     successRate: 'Success Rate',
     coursesStarted: 'Courses Started',
     startLearning: 'Start learning to track your progress!',
+    login: 'Login',
+    logout: 'Logout',
+    username: 'Username',
+    password: 'Password',
+    loginRequired: 'Login Required',
+    loginDescription: 'This course is protected. Please login to access.',
+    loginError: 'Invalid username or password',
+    protectedCourse: 'Protected Course',
   },
   tr: {
     searchPlaceholder: 'Kursları ve videoları ara...',
@@ -173,6 +199,14 @@ const translations = {
     successRate: 'Başarı Oranı',
     coursesStarted: 'Başlanan Kurs',
     startLearning: 'İlerlemenizi takip etmek için öğrenmeye başlayın!',
+    login: 'Giriş Yap',
+    logout: 'Çıkış Yap',
+    username: 'Kullanıcı Adı',
+    password: 'Şifre',
+    loginRequired: 'Giriş Gerekli',
+    loginDescription: 'Bu kurs korumalıdır. Erişmek için giriş yapın.',
+    loginError: 'Geçersiz kullanıcı adı veya şifre',
+    protectedCourse: 'Korumalı Kurs',
   }
 };
 
